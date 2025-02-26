@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int            @id @default(autoincrement())
+  email              String         @unique
+  password           String
+  role               String         @default("user")
+  annualLeaveBalance Int            @default(0)
+  monthlyHourBalance Decimal        @default(0) @db.Decimal(4, 1)
+  name               String?
+  department         Department?    @relation(fields: [departmentId], references: [id])
+  departmentId       Int?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  attendance         Attendance?
+  leaveRequests      LeaveRequest[]
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  status    String   @default("present")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model LeaveRequest {
+  id             Int       @id @default(autoincrement())
+  type           String
+  startDate      DateTime  @db.Date
+  endDate        DateTime? @db.Date
+  requestedDays  Float?
+  requestedHours Decimal?  @db.Decimal(4, 1)
+  status         String    @default("pending")
+  reason         String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id])
+}
+
+model Department {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @db.VarChar(50)
+  users User[]
+}
