@@ -11,9 +11,6 @@ export class UserRepository implements IUserRepository {
     return prisma.user.create({
       data: {
         ...user,
-        attendance: {
-          create: {},
-        },
       },
       include: {
         attendance: true,
@@ -22,15 +19,12 @@ export class UserRepository implements IUserRepository {
     })
   }
 
-  async update(user: User): Promise<User> {
-    return prisma.user.update({
-      where: { id: user.id },
-      data: user,
-      include: {
-        attendance: true,
-        leaveRequests: true,
-        department: true,
-      },
+  async update(id: number, data: Partial<User>): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data,
+      })
     })
   }
 
@@ -40,7 +34,9 @@ export class UserRepository implements IUserRepository {
 
   async findById(id: number): Promise<User | null> {
     return prisma.user.findUnique({
-      where: { id },
+      where: {
+        id: id,
+      },
       include: {
         attendance: true,
         leaveRequests: true,
@@ -69,7 +65,7 @@ export class UserRepository implements IUserRepository {
         take: limit,
         where,
         orderBy,
-        include: { attendance: true, leaveRequests: true },
+        include: { attendance: true, leaveRequests: true, department: true },
       }),
       prisma.user.count({ where }),
     ])
@@ -96,16 +92,57 @@ export class UserRepository implements IUserRepository {
     userId: number,
     amount: number
   ): Promise<void> {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { annualLeaveBalance: amount },
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      })
+
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`)
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { annualLeaveBalance: amount },
+      })
     })
   }
 
   async updateMonthlyHourBalance(userId: number, hours: number): Promise<void> {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { monthlyHourBalance: hours },
+    await prisma.$transaction(async (tx) => {
+      // Lock the user record by selecting it first with a write lock
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      })
+
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`)
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { monthlyHourBalance: hours },
+      })
+    })
+  }
+
+  async updatePassword(userId: number, hashedPassword: string): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      })
+
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`)
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      })
     })
   }
 
