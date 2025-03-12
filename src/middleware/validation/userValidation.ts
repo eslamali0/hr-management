@@ -1,25 +1,46 @@
-import { body, param } from 'express-validator'
-import { validateRequest } from './validateRequest'
+import { z } from "zod";
+import { validateZodRequest } from "./validateZodRequest";
 
-export const validateCreateUser = [
-  body('email').isEmail().withMessage('Invalid email format'),
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-  body('name').notEmpty().withMessage('Name is required'),
-  body('role').optional().isIn(['user', 'admin']).withMessage('Invalid role'),
-  validateRequest,
-]
+const createUserSchema = z.object({
+  body: z.object({
+    email: z.string().email({ message: "Invalid email format" }),
+    password: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters long" }),
+    name: z.string().min(1, { message: "Name is required" }),
+    role: z.enum(["user", "admin"], { message: "Invalid role" }).optional(),
+  }),
+});
 
-export const validateUpdateBalance = [
-  param('userId').isInt().withMessage('Invalid user ID'),
-  body('amount')
-    .isFloat({ min: 0 })
-    .withMessage('Balance amount must be a positive number'),
-  validateRequest,
-]
+const updateBalanceSchema = z.object({
+  params: z.object({
+    userId: z
+      .string()
+      .regex(/^\d+$/, { message: "Invalid user ID" })
+      .transform(Number),
+  }),
+  body: z.object({
+    amount: z
+      .number()
+      .positive({ message: "Balance amount must be a positive number" })
+      .or(
+        z
+          .string()
+          .regex(/^\d*\.?\d+$/)
+          .transform(Number),
+      ),
+  }),
+});
 
-export const validateUserId = [
-  param('userId').isInt().withMessage('Invalid user ID'),
-  validateRequest,
-]
+const userIdSchema = z.object({
+  params: z.object({
+    userId: z
+      .string()
+      .regex(/^\d+$/, { message: "Invalid user ID" })
+      .transform(Number),
+  }),
+});
+
+export const validateCreateUser = validateZodRequest(createUserSchema);
+export const validateUpdateBalance = validateZodRequest(updateBalanceSchema);
+export const validateUserId = validateZodRequest(userIdSchema);
