@@ -1,11 +1,17 @@
 export const TYPES = {
   UserRepository: Symbol.for('UserRepository'),
   LeaveRequestRepository: Symbol.for('LeaveRequestRepository'),
+  HourRequestRepository: Symbol.for('HourRequestRepository'),
   UserService: Symbol.for('UserService'),
   LeaveRequestService: Symbol.for('LeaveRequestService'),
+  HourRequestService: Symbol.for('HourRequestService'),
   AuthService: Symbol.for('AuthService'),
   UserController: Symbol.for('UserController'),
   AuthController: Symbol.for('AuthController'),
   LeaveRequestController: Symbol.for('LeaveRequestController'),
+  HourRequestController: Symbol.for('HourRequestController'),
   PasswordService: Symbol.for('PasswordService'),
+  AttendanceService: Symbol.for('AttendanceService'),
+  StatsService: Symbol.for('StatsService'),
+  StatsController: Symbol.for('StatsController'),
 }
