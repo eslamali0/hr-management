@@ -3,6 +3,7 @@ import { injectable, inject } from 'inversify'
 import { TYPES } from '../config/types'
 import { ILeaveRequestService } from '../services/interfaces/ILeaveRequestService'
 import { asyncHandler } from '../utils/errorHandler'
+import { ApiResponseHandler } from '../utils/apiResponse'
 
 @injectable()
 export class LeaveRequestController {
@@ -11,37 +12,50 @@ export class LeaveRequestController {
     private readonly leaveRequestService: ILeaveRequestService
   ) {}
 
-  submitRequest = async (req: Request, res: Response) => {
-    const request = await this.leaveRequestService.submitLeaveRequest(
-      parseInt(req.params.userId),
-      req.body
-    )
-    res.status(201).json(request)
-  }
+  submitRequest = asyncHandler(async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.userId)
+    const requestData = req.body
 
-  approveRequest = async (req: Request, res: Response) => {
-    const request = await this.leaveRequestService.approveLeaveRequest(
+    await this.leaveRequestService.submitLeaveRequest(userId, requestData)
+
+    ApiResponseHandler.success(res, 'Leave request submitted successfully')
+  })
+
+  approveRequest = asyncHandler(async (req: Request, res: Response) => {
+    await this.leaveRequestService.approveLeaveRequest(
       parseInt(req.params.requestId)
     )
-    res.json(request)
-  }
+    ApiResponseHandler.success(res, 'Leave request approved successfully')
+  })
 
-  rejectRequest = async (req: Request, res: Response) => {
+  rejectRequest = asyncHandler(async (req: Request, res: Response) => {
     const request = await this.leaveRequestService.rejectLeaveRequest(
       parseInt(req.params.requestId)
     )
-    res.json(request)
-  }
+    ApiResponseHandler.success(
+      res,
+      request,
+      'Leave request rejected successfully'
+    )
+  })
 
-  getPendingRequests = async (_req: Request, res: Response) => {
+  getPendingRequests = asyncHandler(async (_req: Request, res: Response) => {
     const requests = await this.leaveRequestService.getPendingRequests()
-    res.json(requests)
-  }
+    ApiResponseHandler.success(
+      res,
+      requests,
+      'Pending leave requests retrieved successfully'
+    )
+  })
 
   getUserRequests = asyncHandler(async (req: Request, res: Response) => {
     const requests = await this.leaveRequestService.getUserRequests(
       parseInt(req.params.userId)
     )
-    res.json(requests)
+    ApiResponseHandler.success(
+      res,
+      requests,
+      'User leave requests retrieved successfully'
+    )
   })
 }
