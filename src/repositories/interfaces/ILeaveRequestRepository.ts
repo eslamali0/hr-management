@@ -1,16 +1,35 @@
 import { LeaveRequest } from '../../types'
-import { IBaseRepository } from './IBaseRepository'
 
-export interface ILeaveRequestRepository extends IBaseRepository<LeaveRequest> {
-  findByUserId(userId: number): Promise<LeaveRequest[]>
+export interface ILeaveRequestRepository {
+  findByUserId(
+    userId: number
+  ): Promise<
+    Pick<
+      LeaveRequest,
+      'id' | 'startDate' | 'endDate' | 'status' | 'requestedDays' | 'reason'
+    >[]
+  >
+  create(request: Omit<LeaveRequest, 'id'>): Promise<void>
+  findById(id: number): Promise<LeaveRequest | null>
+  update(request: LeaveRequest): Promise<void>
   findByStatus(
     status: 'pending' | 'approved' | 'rejected'
-  ): Promise<LeaveRequest[]>
-  create(
-    request: Omit<LeaveRequest, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<LeaveRequest>
-  findById(id: number): Promise<LeaveRequest | null>
-  update(request: LeaveRequest): Promise<LeaveRequest>
-  findByStatus(status: string): Promise<LeaveRequest[]>
+  ): Promise<
+    Pick<
+      LeaveRequest,
+      'id' | 'startDate' | 'endDate' | 'status' | 'requestedDays'
+    >[]
+  >
   findPendingRequests(): Promise<LeaveRequest[]>
+  findOverlappingRequests(
+    userId: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<LeaveRequest[]>
+  approveLeaveRequestWithTransaction(
+    requestId: number,
+    userId: number,
+    newBalance: number
+  ): Promise<void>
+  count(): Promise<number>
 }
