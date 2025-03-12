@@ -70,7 +70,7 @@ export class AuthService implements IAuthService {
   async updateProfile(
     userId: number,
     profileData: Partial<User>
-  ): Promise<User> {
+  ): Promise<void> {
     const user = await this.userService.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
@@ -82,17 +82,22 @@ export class AuthService implements IAuthService {
       departmentId: profileData.departmentId,
     }
 
-    return this.userService.updateProfile(userId, allowedUpdates)
+    this.userService.updateProfile(userId, allowedUpdates)
   }
 
   private generateToken(user: User): string {
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not set')
+    }
+
     return jwt.sign(
       {
         userId: user.id,
         email: user.email,
         role: user.role,
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      jwtSecret,
       { expiresIn: '24h' }
     )
   }

@@ -28,19 +28,24 @@ export class UserService implements IUserService {
       password: hashedPassword,
       role: userData.role || 'user',
       annualLeaveBalance: userData.annualLeaveBalance || 21,
-      monthlyHourBalance: userData.monthlyHourBalance || 3.0,
+      monthlyHourBalance: userData.monthlyHourBalance || 3,
     } as User
 
     return this.userRepository.create(user)
   }
 
   async register(userData: Partial<User>): Promise<Omit<User, 'password'>> {
+    const existingUser = await this.userRepository.findByEmail(userData.email!)
+    if (existingUser) {
+      throw new ValidationError('Email already exists')
+    }
+
     const hashedPassword = await this.passwordService.hash(userData.password!)
 
     const user = {
       ...userData,
       password: hashedPassword,
-      role: 'admin',
+      role: userData.role || 'user',
     } as User
 
     return this.userRepository.create(user)
@@ -59,13 +64,7 @@ export class UserService implements IUserService {
   }
 
   async updatePassword(userId: number, newPassword: string): Promise<void> {
-    const user = await this.userRepository.findById(userId)
-    if (!user) {
-      throw new NotFoundError('User not found')
-    }
-
-    user.password = newPassword
-    await this.userRepository.update(user)
+    await this.userRepository.updatePassword(userId, newPassword)
   }
 
   async findById(userId: number): Promise<User | null> {
@@ -79,7 +78,7 @@ export class UserService implements IUserService {
   async updateProfile(
     userId: number,
     profileData: Partial<User>
-  ): Promise<User> {
+  ): Promise<void> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
@@ -92,10 +91,9 @@ export class UserService implements IUserService {
       if (!departmentExists) {
         throw new ValidationError('Invalid department ID')
       }
-      user.departmentId = profileData.departmentId
     }
 
-    return this.userRepository.update(user)
+    return this.userRepository.update(userId, profileData)
   }
 
   async getAllUsers(
