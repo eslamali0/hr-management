@@ -6,6 +6,9 @@ import { initializeDatabase } from './config/database'
 import { errorHandler } from './utils/errorHandler'
 import { createRoutes } from './routes'
 import { setupContainer } from './config/container'
+import cron from 'node-cron'
+import { TYPES } from './config/types'
+import { IAttendanceService } from './services/interfaces/IAttendanceService'
 
 dotenv.config()
 
@@ -25,6 +28,16 @@ export const initializeApp = async () => {
 
   // Error handling
   app.use(errorHandler)
+
+  // Set up cron job to run daily at 12:01 AM
+  cron.schedule('1 0 * * *', async () => {
+    console.log('Running daily attendance processing...')
+    const attendanceService = container.get<IAttendanceService>(
+      TYPES.AttendanceService
+    )
+    await attendanceService.processDailyAttendance()
+    console.log('Daily attendance processing completed')
+  })
 
   return app
 }

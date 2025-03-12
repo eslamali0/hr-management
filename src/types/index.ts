@@ -3,32 +3,32 @@ import {
   Attendance as PrismaAttendance,
   LeaveRequest as PrismaLeaveRequest,
   Department,
-} from '@prisma/client'
+} from "@prisma/client";
 
 export type UserWithRelations = PrismaUser & {
-  attendance: PrismaAttendance[]
-  leaveRequests: PrismaLeaveRequest[]
-  department?: Department
-}
+  attendance: PrismaAttendance[];
+  leaveRequests: PrismaLeaveRequest[];
+  department?: Department;
+};
 
 export type LeaveRequestWithUser = PrismaLeaveRequest & {
-  user: PrismaUser
-}
+  user: PrismaUser;
+};
 
 // Re-export Prisma types for convenience
-export type User = PrismaUser
-export type LeaveRequest = PrismaLeaveRequest
-export type Attendance = PrismaAttendance
+export type User = PrismaUser;
+export type LeaveRequest = PrismaLeaveRequest;
+export type Attendance = PrismaAttendance;
 
 export type ApiResponse<T = unknown> = {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
   meta?: {
-    page?: number
-    limit?: number
-    total?: number
-    totalPages?: number
-  }
-}
+    page?: number;
+    limit?: number;
+    total?: number;
+    totalPages?: number;
+  };
+};
