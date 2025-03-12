@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - '${PORT}:3001' # Matches .env PORT=3001
+    depends_on:
+      - mssql
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    env_file:
+      - .env
+    ports:
+      - '${DB_PORT}:1433' # Maps external 1435 to internal 1433
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD} # Reference DB_PASSWORD from .env
+      - MSSQL_PID=Developer
+    volumes:
+      - mssql-data:/var/opt/mssql
+    restart: unless-stopped
+
+volumes:
+  mssql-data:
