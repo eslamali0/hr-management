@@ -1,9 +1,10 @@
-import { Attendance } from '../../entities/Attendance'
+import { Attendance } from '@prisma/client'
 
 export interface IAttendanceService {
   markAttendance(
     userId: number,
-    status: 'present' | 'on_leave' | 'hourly_leave'
+    status: 'Present' | 'On_Leave' | 'Hourly_Leave'
   ): Promise<Attendance>
   getCurrentAttendance(userId: number): Promise<Attendance | null>
+  processDailyAttendance(): Promise<void>
 }
