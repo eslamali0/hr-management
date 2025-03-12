@@ -13,38 +13,45 @@ model User {
   password           String
   role               String         @default("user")
   annualLeaveBalance Int            @default(0)
-  monthlyHourBalance Decimal        @default(0) @db.Decimal(4, 1)
+  monthlyHourBalance Int            @default(0)
   name               String?
   department         Department?    @relation(fields: [departmentId], references: [id])
   departmentId       Int?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
-  attendance         Attendance?
+  attendance         Attendance[]
   leaveRequests      LeaveRequest[]
+  hourRequests       HourRequest[]
 }
 
 model Attendance {
-  id        Int      @id @default(autoincrement())
-  status    String   @default("present")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    Int      @unique
-  user      User     @relation(fields: [userId], references: [id])
+  id     Int      @id @default(autoincrement())
+  status String   @default("Present")
+  date   DateTime @db.Date
+  userId Int
+  user   User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
 }
 
 model LeaveRequest {
-  id             Int       @id @default(autoincrement())
-  type           String
-  startDate      DateTime  @db.Date
-  endDate        DateTime? @db.Date
-  requestedDays  Float?
-  requestedHours Decimal?  @db.Decimal(4, 1)
-  status         String    @default("pending")
-  reason         String?   @db.Text
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            Int      @id @default(autoincrement())
+  startDate     DateTime @db.Date
+  endDate       DateTime @db.Date
+  requestedDays Float
+  status        String   @default("Pending") // PENDING/APPROVED/REJECTED
+  reason        String?  @db.Text
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model HourRequest {
+  id             Int      @id @default(autoincrement())
+  date           DateTime @db.Date
+  requestedHours Int      @default(0)
+  status         String   @default("Pending")
   userId         Int
-  user           User      @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
 }
 
 model Department {
