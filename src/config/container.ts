@@ -23,6 +23,10 @@ import { IPasswordService } from '../services/interfaces/IPasswordService'
 import { StatsController } from '../controllers/StatsController'
 import { StatsService } from '../services/implementations/StatsService'
 import { IStatsService } from '../services/interfaces/IStatsService'
+import { IHourRequestValidator } from '../services/interfaces/IHourRequestValidator'
+import { HourRequestValidator } from '../services/HourRequestValidator'
+import { ILeaveRequestValidator } from '../services/interfaces/ILeaveRequestValidator'
+import { LeaveRequestValidator } from '../services/LeaveRequestValidator'
 
 export const setupContainer = () => {
   const container = new Container()
@@ -62,6 +66,15 @@ export const setupContainer = () => {
   // Register Stats Service and Controller
   container.bind<IStatsService>(TYPES.StatsService).to(StatsService)
   container.bind(TYPES.StatsController).to(StatsController)
+
+  //Validators (HourRequest & LeaveRequest)
+  container
+    .bind<IHourRequestValidator>(TYPES.HourRequestValidator)
+    .to(HourRequestValidator)
+
+  container
+    .bind<ILeaveRequestValidator>(TYPES.LeaveRequestValidator)
+    .to(LeaveRequestValidator)
 
   return container
 }
