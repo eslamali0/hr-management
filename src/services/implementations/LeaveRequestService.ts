@@ -1,10 +1,17 @@
 import { ILeaveRequestService } from '../interfaces/ILeaveRequestService'
 import { ILeaveRequestRepository } from '../../repositories/interfaces/ILeaveRequestRepository'
 import { IUserRepository } from '../../repositories/interfaces/IUserRepository'
-import { NotFoundError, ValidationError } from '../../utils/errors'
+import {
+  NotFoundError,
+  ValidationError,
+  BadRequestError,
+  ForbiddenError,
+} from '../../utils/errors'
 import { inject, injectable } from 'inversify'
 import { TYPES } from '../../config/types'
 import { LeaveRequest } from '@prisma/client'
+import { ILeaveRequestValidator } from '../interfaces/ILeaveRequestValidator'
+import { DateCalculator } from '../../utils/DateCalculator'
 
 @injectable()
 export class LeaveRequestService implements ILeaveRequestService {
@@ -12,79 +19,110 @@ export class LeaveRequestService implements ILeaveRequestService {
     @inject(TYPES.LeaveRequestRepository)
     private readonly leaveRequestRepository: ILeaveRequestRepository,
     @inject(TYPES.UserRepository)
-    private readonly userRepository: IUserRepository
+    private readonly userRepository: IUserRepository,
+    @inject(TYPES.LeaveRequestValidator)
+    private readonly leaveRequestValidator: ILeaveRequestValidator
   ) {}
 
-  private calculateBusinessDays(startDate: Date, endDate: Date): number {
-    let days = 0
-    const current = new Date(startDate)
-    const end = new Date(endDate)
-
-    while (current <= end) {
-      const dayOfWeek = current.getDay()
-      if (dayOfWeek !== 5 && dayOfWeek !== 6) {
-        days++
-      }
-      current.setDate(current.getDate() + 1)
+  // Common method for both submit and update operations
+  private async validateAndPrepareRequest(
+    userId: number,
+    requestData: Partial<LeaveRequest>,
+    existingRequest?: LeaveRequest
+  ): Promise<LeaveRequest> {
+    const user = await this.userRepository.findById(userId)
+    if (!user) {
+      throw new NotFoundError('User not found')
     }
-    return days
+
+    // For updates, we use existing values if not provided in the update
+    const startDate = requestData.startDate
+      ? new Date(requestData.startDate)
+      : existingRequest?.startDate
+
+    const endDate = requestData.endDate
+      ? new Date(requestData.endDate)
+      : existingRequest?.endDate
+
+    if (!startDate || !endDate) {
+      throw new ValidationError('Start date and end date are required')
+    }
+
+    if (startDate > endDate) {
+      throw new ValidationError('Start date must be before end date')
+    }
+
+    // Validate dates (checks for overlaps)
+    await this.leaveRequestValidator.validateRequestDates(
+      userId,
+      startDate,
+      endDate
+    )
+
+    // Calculate business days
+    const requestedDays = DateCalculator.calculateBusinessDays(
+      startDate,
+      endDate
+    )
+
+    // Validate leave balance
+    this.leaveRequestValidator.validateLeaveBalance(
+      requestedDays,
+      user.annualLeaveBalance
+    )
+
+    /** REFACTOR */
+    // Prepare the request object
+    return {
+      ...(existingRequest || {}),
+      ...requestData,
+      startDate,
+      endDate,
+      requestedDays,
+      status: existingRequest ? existingRequest.status : 'Pending',
+      userId,
+    } as LeaveRequest
   }
 
   async submitLeaveRequest(
     userId: number,
     requestData: Partial<LeaveRequest>
   ): Promise<void> {
-    const user = await this.userRepository.findById(userId)
-    if (!user) {
-      throw new NotFoundError('User not found')
-    }
-
-    if (!requestData.startDate || !requestData.endDate) {
-      throw new ValidationError('Start date and end date are required')
-    }
-
-    const startDate = new Date(requestData.startDate)
-    const endDate = new Date(requestData.endDate)
-
-    if (startDate > endDate) {
-      throw new ValidationError('Start date must be before end date')
-    }
-
-    // Check for overlapping leave requests
-    const overlappingRequests =
-      await this.leaveRequestRepository.findOverlappingRequests(
-        userId,
-        startDate,
-        endDate
-      )
-
-    if (overlappingRequests.length > 0) {
-      throw new ValidationError(
-        'You already have a leave request for this date range'
-      )
-    }
-
-    const requestedDays = this.calculateBusinessDays(startDate, endDate)
-
-    if (requestedDays <= 0)
-      throw new ValidationError(
-        'Leave request must include at least one business day '
-      )
-
-    if (requestedDays > user.annualLeaveBalance) {
-      throw new ValidationError('Insufficient leave balance')
-    }
-
-    const request = {
-      ...requestData,
-      startDate,
-      endDate,
-      requestedDays,
-      status: 'Pending',
-      userId,
-    } as LeaveRequest
-
+    const request = await this.validateAndPrepareRequest(userId, requestData)
     await this.leaveRequestRepository.create(request)
+  }
+
+  async updateLeaveRequest(
+    userId: number,
+    requestId: number,
+    requestData: Partial<LeaveRequest>
+  ): Promise<void> {
+    // Find the existing request
+    const existingRequest = await this.leaveRequestRepository.findById(
+      requestId
+    )
+
+    if (!existingRequest) {
+      throw new NotFoundError('Leave request not found')
+    }
+
+    if (existingRequest.userId !== userId) {
+      throw new ForbiddenError('You can only update your own requests')
+    }
+
+    if (existingRequest.status !== 'Pending') {
+      throw new BadRequestError('Only pending requests can be updated')
+    }
+
+    // Validate and prepare the updated request
+    const updatedRequest = await this.validateAndPrepareRequest(
+      userId,
+      requestData,
+      existingRequest
+    )
+
+    // Update the request
+    await this.leaveRequestRepository.update(updatedRequest)
   }
 
   async approveLeaveRequest(requestId: number): Promise<void> {

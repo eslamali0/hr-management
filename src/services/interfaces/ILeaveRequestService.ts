@@ -20,4 +20,9 @@ export interface ILeaveRequestService {
       'id' | 'startDate' | 'endDate' | 'status' | 'requestedDays' | 'reason'
     >[]
   >
+  updateLeaveRequest(
+    userId: number,
+    requestId: number,
+    requestData: Partial<LeaveRequest>
+  ): Promise<void>
 }

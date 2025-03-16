@@ -12,6 +12,7 @@ export interface ILeaveRequestRepository {
   create(request: Omit<LeaveRequest, 'id'>): Promise<void>
   findById(id: number): Promise<LeaveRequest | null>
   update(request: LeaveRequest): Promise<void>
+  delete(id: number): Promise<void>
   findByStatus(
     status: 'pending' | 'approved' | 'rejected'
   ): Promise<
