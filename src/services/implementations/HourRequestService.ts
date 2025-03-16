@@ -3,7 +3,12 @@ import { TYPES } from '../../config/types'
 import { HourRequest } from '@prisma/client'
 import { IUserRepository } from '../../repositories/interfaces/IUserRepository'
 import { IHourRequestRepository } from '../../repositories/interfaces/IHourRequestRepository'
-import { NotFoundError, ValidationError } from '../../utils/errors'
+import {
+  NotFoundError,
+  ValidationError,
+  BadRequestError,
+  ForbiddenError,
+} from '../../utils/errors'
 import { IHourRequestService } from '../interfaces/IHourRequestService'
 
 @injectable()
@@ -15,20 +20,26 @@ export class HourRequestService implements IHourRequestService {
     private readonly userRepository: IUserRepository
   ) {}
 
-  async submitHourRequest(
+  // Common method for both submit and update operations
+  private async validateAndPrepareRequest(
     userId: number,
-    requestData: Partial<HourRequest>
-  ): Promise<void> {
+    requestData: Partial<HourRequest>,
+    existingRequest?: HourRequest
+  ): Promise<HourRequest> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
     }
 
-    if (!requestData.date) {
+    // For updates, use existing values if not provided in the update
+    const requestDate = requestData.date
+      ? new Date(requestData.date)
+      : existingRequest?.date
+
+    if (!requestDate) {
       throw new ValidationError('Date is required')
     }
 
-    const requestDate = new Date(requestData.date)
     if (isNaN(requestDate.getTime())) {
       throw new ValidationError('Invalid date format')
     }
@@ -40,34 +51,93 @@ export class HourRequestService implements IHourRequestService {
       throw new ValidationError('Cannot submit hour request for past dates')
     }
 
-    if (
-      !requestData.requestedHours ||
-      Number(requestData.requestedHours) <= 0
-    ) {
+    // Get requested hours from input or existing request
+    const requestedHours =
+      requestData.requestedHours !== undefined
+        ? Number(requestData.requestedHours)
+        : existingRequest?.requestedHours
+
+    if (!requestedHours || requestedHours <= 0) {
       throw new ValidationError('Requested hours must be greater than 0')
     }
 
-    if (requestData.requestedHours > user.monthlyHourBalance) {
+    if (requestedHours > user.monthlyHourBalance) {
       throw new ValidationError(
         `Insufficient hour balance. Available: ${user.monthlyHourBalance} hours`
       )
     }
 
-    // Check for existing request on the same date
-    const existingRequest =
-      await this.hourRequestRepository.findByUserIdAndDate(userId, requestDate)
-    if (existingRequest) {
-      throw new ValidationError('An hour request already exists for this date')
+    // Check for existing request on the same date (only for new requests or date changes)
+    if (
+      !existingRequest ||
+      (existingRequest &&
+        requestData.date &&
+        existingRequest.date.getTime() !== requestDate.getTime())
+    ) {
+      const overlappingRequest =
+        await this.hourRequestRepository.findByUserIdAndDate(
+          userId,
+          requestDate
+        )
+
+      if (
+        overlappingRequest &&
+        (!existingRequest || overlappingRequest.id !== existingRequest.id)
+      ) {
+        throw new ValidationError(
+          'An hour request already exists for this date'
+        )
+      }
     }
 
-    const request = {
+    // Prepare the request object
+    return {
+      ...(existingRequest || {}),
       ...requestData,
       date: requestDate,
-      status: 'pending',
+      requestedHours,
+      status: existingRequest ? existingRequest.status : 'pending',
       userId,
     } as HourRequest
+  }
 
-    this.hourRequestRepository.create(request)
+  async submitHourRequest(
+    userId: number,
+    requestData: Partial<HourRequest>
+  ): Promise<void> {
+    const request = await this.validateAndPrepareRequest(userId, requestData)
+    await this.hourRequestRepository.create(request)
+  }
+
+  async updateHourRequest(
+    userId: number,
+    requestId: number,
+    requestData: Partial<HourRequest>
+  ): Promise<void> {
+    // Find the existing request
+    const existingRequest = await this.hourRequestRepository.findById(requestId)
+
+    if (!existingRequest) {
+      throw new NotFoundError('Hour request not found')
+    }
+
+    if (existingRequest.userId !== userId) {
+      throw new ForbiddenError('You can only update your own requests')
+    }
+
+    if (existingRequest.status !== 'pending') {
+      throw new BadRequestError('Only pending requests can be updated')
+    }
+
+    // Validate and prepare the updated request
+    const updatedRequest = await this.validateAndPrepareRequest(
+      userId,
+      requestData,
+      existingRequest
+    )
+
+    // Update the request
+    await this.hourRequestRepository.update(updatedRequest)
   }
 
   async approveHourRequest(requestId: number): Promise<void> {
