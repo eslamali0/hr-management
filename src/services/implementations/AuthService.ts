@@ -27,7 +27,10 @@ export class AuthService implements IAuthService {
   async login(
     email: string,
     password: string
-  ): Promise<{ token: string; user: Omit<User, 'password'> }> {
+  ): Promise<{
+    token: string
+    user: Pick<User, 'id' | 'name' | 'email' | 'role' | 'departmentId'>
+  }> {
     const user = await this.userService.findUserByEmail(email)
     if (!user) {
       throw new AuthenticationError('Invalid credentials')
@@ -40,9 +43,19 @@ export class AuthService implements IAuthService {
     if (!isValidPassword) {
       throw new AuthenticationError('Invalid credentials')
     }
+
     const token = this.generateToken(user)
-    const { password: _password, ...userWithoutPassword } = user
-    return { token, user: userWithoutPassword }
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        departmentId: user.departmentId,
+      },
+    }
   }
 
   async changePassword(
@@ -79,10 +92,11 @@ export class AuthService implements IAuthService {
     // Only allow updating specific fields
     const allowedUpdates = {
       name: profileData.name,
+      email: profileData.email,
       departmentId: profileData.departmentId,
     }
 
-    this.userService.updateProfile(userId, allowedUpdates)
+    await this.userService.updateProfile(userId, allowedUpdates)
   }
 
   private generateToken(user: User): string {
