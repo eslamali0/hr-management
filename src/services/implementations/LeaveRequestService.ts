@@ -12,6 +12,7 @@ import { TYPES } from '../../config/types'
 import { LeaveRequest } from '@prisma/client'
 import { ILeaveRequestValidator } from '../interfaces/ILeaveRequestValidator'
 import { DateCalculator } from '../../utils/DateCalculator'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class LeaveRequestService implements ILeaveRequestService {
@@ -79,7 +80,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       startDate,
       endDate,
       requestedDays,
-      status: existingRequest ? existingRequest.status : 'Pending',
+      status: existingRequest ? existingRequest.status : RequestStatus.PENDING,
       userId,
     } as LeaveRequest
   }
@@ -110,7 +111,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       throw new ForbiddenError('You can only update your own requests')
     }
 
-    if (existingRequest.status !== 'Pending') {
+    if (existingRequest.status !== RequestStatus.PENDING) {
       throw new BadRequestError('Only pending requests can be updated')
     }
 
@@ -131,7 +132,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       throw new NotFoundError('Leave request not found')
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== RequestStatus.PENDING) {
       throw new ValidationError('Request has already been processed')
     }
 
@@ -160,7 +161,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       throw new NotFoundError('Leave request not found')
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== RequestStatus.PENDING) {
       throw new ValidationError('Request has already been processed')
     }
 
@@ -174,7 +175,7 @@ export class LeaveRequestService implements ILeaveRequestService {
       'id' | 'startDate' | 'endDate' | 'status' | 'requestedDays'
     >[]
   > {
-    return this.leaveRequestRepository.findByStatus('pending')
+    return this.leaveRequestRepository.findByStatus(RequestStatus.PENDING)
   }
 
   async getUserRequests(

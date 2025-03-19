@@ -1,3 +1,4 @@
+import { RequestStatus } from '../../constants/requestStatus'
 import { LeaveRequest } from '../../types'
 
 export interface ILeaveRequestRepository {
@@ -14,7 +15,10 @@ export interface ILeaveRequestRepository {
   update(request: LeaveRequest): Promise<void>
   delete(id: number): Promise<void>
   findByStatus(
-    status: 'pending' | 'approved' | 'rejected'
+    status:
+      | RequestStatus.APPROVED
+      | RequestStatus.PENDING
+      | RequestStatus.REJECTED
   ): Promise<
     Pick<
       LeaveRequest,

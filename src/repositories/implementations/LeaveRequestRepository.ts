@@ -3,6 +3,7 @@ import prisma from '../../lib/prisma'
 import { ILeaveRequestRepository } from '../interfaces/ILeaveRequestRepository'
 import { LeaveRequest, User } from '@prisma/client'
 import { NotFoundError } from '../../utils/errors'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class LeaveRequestRepository implements ILeaveRequestRepository {
@@ -102,7 +103,10 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
   }
 
   async findByStatus(
-    status: 'pending' | 'approved' | 'rejected'
+    status:
+      | RequestStatus.APPROVED
+      | RequestStatus.PENDING
+      | RequestStatus.REJECTED
   ): Promise<
     Pick<
       LeaveRequest,
@@ -121,7 +125,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
           user: {
             select: {
               name: true,
-              id: true,
+              department: { select: { name: true } },
             },
           },
         },
@@ -134,7 +138,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
   async findPendingRequests(): Promise<(LeaveRequest & { user: User })[]> {
     try {
       return await prisma.leaveRequest.findMany({
-        where: { status: 'pending' },
+        where: { status: RequestStatus.PENDING },
         include: {
           user: true,
         },
@@ -170,7 +174,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
             },
             {
               status: {
-                in: ['pending', 'approved'],
+                in: [RequestStatus.PENDING, RequestStatus.APPROVED],
               },
             },
           ],
@@ -207,7 +211,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
   async count(): Promise<number> {
     return prisma.leaveRequest.count({
       where: {
-        status: 'Pending',
+        status: RequestStatus.PENDING,
       },
     })
   }
