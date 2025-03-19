@@ -246,6 +246,16 @@ export class UserService implements IUserService {
       throw new BadRequestError('Only pending requests can be deleted')
     }
 
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const requestDate = new Date(request.date)
+    requestDate.setHours(0, 0, 0, 0)
+
+    if (requestDate < today) {
+      throw new BadRequestError('Cannot delete past requests')
+    }
+
     await this.hourRequestRepository.delete(requestId)
   }
 
