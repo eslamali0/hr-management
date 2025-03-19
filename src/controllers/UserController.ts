@@ -100,7 +100,7 @@ export class UserController {
   })
 
   updateUser = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.updateUser(
+    const user = await this.userService.updateProfile(
       parseInt(req.params.id),
       req.body
     )

@@ -15,6 +15,7 @@ import { IHourRequestRepository } from '../../repositories/interfaces/IHourReque
 import { DateCalculator } from '../../utils/DateCalculator'
 import { ILeaveRequestValidator } from '../interfaces/ILeaveRequestValidator'
 import { IHourRequestValidator } from '../interfaces/IHourRequestValidator'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class UserService implements IUserService {
@@ -103,6 +104,12 @@ export class UserService implements IUserService {
       throw new NotFoundError('User not found')
     }
 
+    const allowedUpdates = {
+      name: profileData.name,
+      email: profileData.email,
+      departmentId: profileData.departmentId,
+    }
+
     if (profileData.departmentId !== undefined) {
       const departmentExists = await this.userRepository.departmentExists(
         profileData.departmentId!
@@ -112,7 +119,7 @@ export class UserService implements IUserService {
       }
     }
 
-    return this.userRepository.update(userId, profileData)
+    return this.userRepository.update(userId, allowedUpdates)
   }
 
   async getAllUsers(
@@ -137,8 +144,8 @@ export class UserService implements IUserService {
     return this.userRepository.getDepartments()
   }
 
-  async updateUser(id: number, data: Partial<User>): Promise<void> {
-    this.userRepository.update(id, data)
+  async updateUser(userId: number, data: Partial<User>): Promise<void> {
+    this.updateProfile(userId, data)
   }
 
   async deleteUser(id: number): Promise<void> {
@@ -161,7 +168,7 @@ export class UserService implements IUserService {
     }
 
     // Only allow deletion of pending requests
-    if (request.status !== 'Pending') {
+    if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestError('Only pending requests can be deleted')
     }
 
@@ -177,7 +184,7 @@ export class UserService implements IUserService {
 
     if (!request) throw new NotFoundError('Leave request not found')
     if (request.userId !== userId) throw new ForbiddenError('Not your request')
-    if (request.status !== 'Pending')
+    if (request.status !== RequestStatus.PENDING)
       throw new BadRequestError('Only pending requests can be updated')
 
     // Get updated dates or use existing ones
@@ -235,7 +242,7 @@ export class UserService implements IUserService {
       throw new ForbiddenError('You can only delete your own requests')
     }
 
-    if (request.status !== 'Pending') {
+    if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestError('Only pending requests can be deleted')
     }
 
@@ -251,7 +258,7 @@ export class UserService implements IUserService {
 
     if (!request) throw new NotFoundError('Hour request not found')
     if (request.userId !== userId) throw new ForbiddenError('Not your request')
-    if (request.status !== 'Pending')
+    if (request.status !== RequestStatus.PENDING)
       throw new BadRequestError('Only pending requests can be updated')
 
     // Get updated date or use existing
