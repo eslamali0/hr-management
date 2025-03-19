@@ -10,6 +10,7 @@ import {
   ForbiddenError,
 } from '../../utils/errors'
 import { IHourRequestService } from '../interfaces/IHourRequestService'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class HourRequestService implements IHourRequestService {
@@ -96,7 +97,7 @@ export class HourRequestService implements IHourRequestService {
       ...requestData,
       date: requestDate,
       requestedHours,
-      status: existingRequest ? existingRequest.status : 'pending',
+      status: existingRequest ? existingRequest.status : RequestStatus.PENDING,
       userId,
     } as HourRequest
   }
@@ -125,7 +126,7 @@ export class HourRequestService implements IHourRequestService {
       throw new ForbiddenError('You can only update your own requests')
     }
 
-    if (existingRequest.status !== 'pending') {
+    if (existingRequest.status !== RequestStatus.PENDING) {
       throw new BadRequestError('Only pending requests can be updated')
     }
 
@@ -146,7 +147,7 @@ export class HourRequestService implements IHourRequestService {
       throw new NotFoundError('Hour request not found')
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== RequestStatus.PENDING) {
       throw new ValidationError('Request has already been processed')
     }
 
@@ -182,7 +183,7 @@ export class HourRequestService implements IHourRequestService {
       throw new NotFoundError('Hour request not found')
     }
 
-    if (request.status !== 'pending') {
+    if (request.status !== RequestStatus.PENDING) {
       throw new ValidationError('Request has already been processed')
     }
 
@@ -197,7 +198,7 @@ export class HourRequestService implements IHourRequestService {
       }
     })[]
   > {
-    return this.hourRequestRepository.findByStatus('pending')
+    return this.hourRequestRepository.findByStatus(RequestStatus.PENDING)
   }
 
   async getUserRequests(userId: number): Promise<Partial<HourRequest>[]> {

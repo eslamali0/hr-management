@@ -3,6 +3,7 @@ import prisma from '../../lib/prisma'
 import { IHourRequestRepository } from '../interfaces/IHourRequestRepository'
 import { HourRequest, User } from '@prisma/client'
 import { NotFoundError } from '../../utils/errors'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class HourRequestRepository implements IHourRequestRepository {
@@ -106,14 +107,19 @@ export class HourRequestRepository implements IHourRequestRepository {
     try {
       return await prisma.hourRequest.findMany({
         where: { userId },
-        select: { date: true, requestedHours: true, status: true },
+        select: { id: true, date: true, requestedHours: true, status: true },
       })
     } catch (error) {
       throw error
     }
   }
 
-  async findByStatus(status: 'pending' | 'approved' | 'rejected'): Promise<
+  async findByStatus(
+    status:
+      | RequestStatus.PENDING
+      | RequestStatus.APPROVED
+      | RequestStatus.REJECTED
+  ): Promise<
     (Partial<HourRequest> & {
       user: {
         name: string | null
@@ -166,7 +172,7 @@ export class HourRequestRepository implements IHourRequestRepository {
   async count(): Promise<number> {
     return prisma.hourRequest.count({
       where: {
-        status: 'Pending',
+        status: RequestStatus.PENDING,
       },
     })
   }

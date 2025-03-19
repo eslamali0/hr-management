@@ -1,3 +1,4 @@
+import { RequestStatus } from '../../constants/requestStatus'
 import { HourRequest, User } from '@prisma/client'
 
 export interface IHourRequestRepository {
@@ -9,7 +10,12 @@ export interface IHourRequestRepository {
   findById(id: number): Promise<HourRequest | null>
   findAll(): Promise<HourRequest[]>
   findByUserId(userId: number): Promise<Partial<HourRequest>[]>
-  findByStatus(status: 'pending' | 'approved' | 'rejected'): Promise<
+  findByStatus(
+    status:
+      | RequestStatus.APPROVED
+      | RequestStatus.PENDING
+      | RequestStatus.REJECTED
+  ): Promise<
     (Partial<HourRequest> & {
       user: {
         name: string | null
