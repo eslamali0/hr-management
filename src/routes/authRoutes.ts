@@ -1,35 +1,27 @@
-import { Router } from "express";
-import { Container } from "inversify";
-import { TYPES } from "../config/types";
-import { AuthController } from "../controllers/AuthController";
+import { Router } from 'express'
+import { Container } from 'inversify'
+import { TYPES } from '../config/types'
+import { AuthController } from '../controllers/AuthController'
 import {
   validateLogin,
   validateChangePassword,
-  validateUpdateProfile,
   validateRegister,
-} from "../middleware/validation/authValidation";
-import { isAuthenticated } from "../middleware/auth";
+} from '../middleware/validation/authValidation'
+import { isAuthenticated } from '../middleware/auth'
 
 export const authRouter = (container: Container) => {
-  const router = Router();
-  const authController = container.get<AuthController>(TYPES.AuthController);
+  const router = Router()
+  const authController = container.get<AuthController>(TYPES.AuthController)
 
-  router.post("/register", validateRegister, authController.register);
-  router.post("/login", validateLogin, authController.login);
+  router.post('/register', validateRegister, authController.register)
+  router.post('/login', validateLogin, authController.login)
 
   router.patch(
-    "/change-password",
+    '/change-password',
     isAuthenticated,
     validateChangePassword,
-    authController.changePassword,
-  );
+    authController.changePassword
+  )
 
-  router.patch(
-    "/profile",
-    isAuthenticated,
-    validateUpdateProfile,
-    authController.updateProfile,
-  );
-
-  return router;
-};
+  return router
+}

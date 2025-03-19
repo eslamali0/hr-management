@@ -80,25 +80,6 @@ export class AuthService implements IAuthService {
     await this.userService.updatePassword(userId, hashedPassword)
   }
 
-  async updateProfile(
-    userId: number,
-    profileData: Partial<User>
-  ): Promise<void> {
-    const user = await this.userService.findById(userId)
-    if (!user) {
-      throw new NotFoundError('User not found')
-    }
-
-    // Only allow updating specific fields
-    const allowedUpdates = {
-      name: profileData.name,
-      email: profileData.email,
-      departmentId: profileData.departmentId,
-    }
-
-    await this.userService.updateProfile(userId, allowedUpdates)
-  }
-
   private generateToken(user: User): string {
     const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {

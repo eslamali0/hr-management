@@ -13,7 +13,6 @@ export interface IAuthService {
     currentPassword: string,
     newPassword: string
   ): Promise<void>
-  updateProfile(userId: number, profileData: Partial<User>): Promise<void>
   register(
     userData: Partial<User> & { password: string }
   ): Promise<Omit<User, 'password'>>
