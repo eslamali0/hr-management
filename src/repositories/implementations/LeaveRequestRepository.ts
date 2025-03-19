@@ -122,6 +122,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
           endDate: true,
           status: true,
           requestedDays: true,
+          reason: true,
           user: {
             select: {
               name: true,
