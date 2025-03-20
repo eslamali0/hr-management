@@ -15,7 +15,12 @@ export interface IUserRepository {
     limit: number,
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
-  ): Promise<{ data: User[]; total: number; page: number; totalPages: number }>
+  ): Promise<{
+    data: Pick<User, 'id' | 'name'>[]
+    total: number
+    page: number
+    totalPages: number
+  }>
   departmentExists(id: number): Promise<boolean>
   getDepartments(): Promise<Department[]>
 }

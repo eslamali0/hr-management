@@ -51,7 +51,7 @@ export class UserRepository implements IUserRepository {
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
   ): Promise<{
-    data: User[]
+    data: Pick<User, 'name' | 'id'>[]
     total: number
     page: number
     totalPages: number
@@ -65,7 +65,11 @@ export class UserRepository implements IUserRepository {
         take: limit,
         where,
         orderBy,
-        include: { attendance: true, leaveRequests: true, department: true },
+        select: {
+          id: true,
+          name: true,
+          department: { select: { name: true } },
+        },
       }),
       prisma.user.count({ where }),
     ])

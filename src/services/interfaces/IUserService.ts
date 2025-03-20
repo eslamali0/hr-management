@@ -14,7 +14,12 @@ export interface IUserService {
     limit?: number,
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
-  ): Promise<{ data: User[]; total: number; page: number; totalPages: number }>
+  ): Promise<{
+    data: Pick<User, 'id' | 'name'>[]
+    total: number
+    page: number
+    totalPages: number
+  }>
   getUserById(userId: number): Promise<User | null>
   getDepartments(): Promise<Department[]>
   updateUser(id: number, data: Partial<User>): Promise<void>

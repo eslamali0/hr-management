@@ -128,7 +128,7 @@ export class UserService implements IUserService {
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
   ): Promise<{
-    data: User[]
+    data: Pick<User, 'id' | 'name'>[]
     total: number
     page: number
     totalPages: number
