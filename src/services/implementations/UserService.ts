@@ -1,39 +1,22 @@
 import { IUserService } from '../interfaces/IUserService'
 import { IUserRepository } from '../../repositories/interfaces/IUserRepository'
 import { IPasswordService } from '../interfaces/IPasswordService'
-import {
-  ValidationError,
-  NotFoundError,
-  BadRequestError,
-  ForbiddenError,
-} from '../../utils/errors'
+import { ValidationError, NotFoundError } from '../../utils/errors'
 import { inject, injectable } from 'inversify'
 import { TYPES } from '../../config/types'
 import { Department, User } from '@prisma/client'
-import { ILeaveRequestRepository } from '../../repositories/interfaces/ILeaveRequestRepository'
-import { IHourRequestRepository } from '../../repositories/interfaces/IHourRequestRepository'
-import { DateCalculator } from '../../utils/DateCalculator'
-import { ILeaveRequestValidator } from '../interfaces/ILeaveRequestValidator'
-import { IHourRequestValidator } from '../interfaces/IHourRequestValidator'
-import { RequestStatus } from '../../constants/requestStatus'
+import { IImageService } from '../interfaces/IImageService'
 
 @injectable()
 export class UserService implements IUserService {
   constructor(
     @inject(TYPES.UserRepository)
     private readonly userRepository: IUserRepository,
-    @inject(TYPES.LeaveRequestRepository)
-    private readonly leaveRequestRepository: ILeaveRequestRepository,
-    @inject(TYPES.HourRequestRepository)
-    private readonly hourRequestRepository: IHourRequestRepository,
-    @inject(TYPES.LeaveRequestValidator)
-    private readonly leaveRequestValidator: ILeaveRequestValidator,
-    @inject(TYPES.HourRequestValidator)
-    private readonly hourRequestValidator: IHourRequestValidator
+    @inject(TYPES.ImageService)
+    private readonly imagesService: IImageService,
+    @inject(TYPES.PasswordService)
+    private readonly passwordService: IPasswordService
   ) {}
-
-  @inject(TYPES.PasswordService)
-  private readonly passwordService: IPasswordService
 
   async createUser(userData: Partial<User>): Promise<User> {
     const existingUser = await this.userRepository.findByEmail(userData.email!)
@@ -97,29 +80,58 @@ export class UserService implements IUserService {
 
   async updateProfile(
     userId: number,
-    profileData: Partial<User>
+    data: Pick<User, 'name' | 'departmentId'>
   ): Promise<void> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
     }
 
-    const allowedUpdates = {
-      name: profileData.name,
-      email: profileData.email,
-      departmentId: profileData.departmentId,
-    }
-
-    if (profileData.departmentId !== undefined) {
+    if (data.departmentId !== undefined && data.departmentId !== null) {
       const departmentExists = await this.userRepository.departmentExists(
-        profileData.departmentId!
+        data.departmentId
       )
       if (!departmentExists) {
         throw new ValidationError('Invalid department ID')
       }
     }
 
-    return this.userRepository.update(userId, allowedUpdates)
+    // Only allow updating name and departmentId
+    const allowedUpdates = {
+      name: data.name,
+      departmentId: data.departmentId,
+    }
+
+    await this.userRepository.update(userId, allowedUpdates)
+  }
+
+  async updateProfileImage(
+    userId: number,
+    profileImage?: Express.Multer.File
+  ): Promise<void> {
+    const user = await this.userRepository.findById(userId)
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+    try {
+      const imageUrl = await this.imagesService.uploadImage(profileImage!)
+
+      if (user.profileImageUrl) {
+        const publicId = this.imagesService.getPublicIdFromUrl(
+          user.profileImageUrl
+        )
+
+        if (publicId) {
+          await this.imagesService.deleteImage(publicId)
+        }
+
+        await this.userRepository.update(userId, {
+          profileImageUrl: imageUrl,
+        })
+      }
+    } catch (error) {
+      throw new Error('Error uploading profile image')
+    }
   }
 
   async getAllUsers(
@@ -144,161 +156,7 @@ export class UserService implements IUserService {
     return this.userRepository.getDepartments()
   }
 
-  async updateUser(userId: number, data: Partial<User>): Promise<void> {
-    this.updateProfile(userId, data)
-  }
-
   async deleteUser(id: number): Promise<void> {
     await this.userRepository.delete(id)
-  }
-
-  async deleteOwnLeaveRequest(
-    userId: number,
-    requestId: number
-  ): Promise<void> {
-    // First verify the request belongs to the user
-    const request = await this.leaveRequestRepository.findById(requestId)
-
-    if (!request) {
-      throw new NotFoundError('Leave request not found')
-    }
-
-    if (request.userId !== userId) {
-      throw new ForbiddenError('You can only delete your own requests')
-    }
-
-    // Only allow deletion of pending requests
-    if (request.status !== RequestStatus.PENDING) {
-      throw new BadRequestError('Only pending requests can be deleted')
-    }
-
-    await this.leaveRequestRepository.delete(requestId)
-  }
-
-  async updateOwnLeaveRequest(
-    userId: number,
-    requestId: number,
-    data: any
-  ): Promise<any> {
-    const request = await this.leaveRequestRepository.findById(requestId)
-
-    if (!request) throw new NotFoundError('Leave request not found')
-    if (request.userId !== userId) throw new ForbiddenError('Not your request')
-    if (request.status !== RequestStatus.PENDING)
-      throw new BadRequestError('Only pending requests can be updated')
-
-    // Get updated dates or use existing ones
-    const startDate = data.startDate
-      ? new Date(data.startDate)
-      : new Date(request.startDate)
-    const endDate = data.endDate
-      ? new Date(data.endDate)
-      : new Date(request.endDate)
-
-    // Validate date logic
-    await this.leaveRequestValidator.validateRequestDates(
-      userId,
-      startDate,
-      endDate
-    )
-
-    // Calculate business days
-    const requestedDays = DateCalculator.calculateBusinessDays(
-      startDate,
-      endDate
-    )
-
-    // Get user balance
-    const user = await this.userRepository.findById(userId)
-    if (!user) throw new NotFoundError('User not found')
-
-    // Validate balance
-    this.leaveRequestValidator.validateLeaveBalance(
-      requestedDays,
-      user.annualLeaveBalance
-    )
-
-    // Prepare updated data
-    const updatedRequest = {
-      ...request,
-      ...data,
-      startDate,
-      endDate,
-      requestedDays,
-      id: requestId,
-    }
-
-    return this.leaveRequestRepository.update(updatedRequest)
-  }
-
-  async deleteOwnHourRequest(userId: number, requestId: number): Promise<void> {
-    const request = await this.hourRequestRepository.findById(requestId)
-
-    if (!request) {
-      throw new NotFoundError('Hour request not found')
-    }
-
-    if (request.userId !== userId) {
-      throw new ForbiddenError('You can only delete your own requests')
-    }
-
-    if (request.status !== RequestStatus.PENDING) {
-      throw new BadRequestError('Only pending requests can be deleted')
-    }
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const requestDate = new Date(request.date)
-    requestDate.setHours(0, 0, 0, 0)
-
-    if (requestDate < today) {
-      throw new BadRequestError('Cannot delete past requests')
-    }
-
-    await this.hourRequestRepository.delete(requestId)
-  }
-
-  async updateOwnHourRequest(
-    userId: number,
-    requestId: number,
-    data: any
-  ): Promise<any> {
-    const request = await this.hourRequestRepository.findById(requestId)
-
-    if (!request) throw new NotFoundError('Hour request not found')
-    if (request.userId !== userId) throw new ForbiddenError('Not your request')
-    if (request.status !== RequestStatus.PENDING)
-      throw new BadRequestError('Only pending requests can be updated')
-
-    // Get updated date or use existing
-    const date = data.date ? new Date(data.date) : new Date(request.date)
-    const requestedHours = data.requestedHours || request.requestedHours
-
-    // Validate date logic
-    if (data.date) {
-      await this.hourRequestValidator.validateRequestDates(userId, date)
-    }
-
-    // Get user balance
-    const user = await this.userRepository.findById(userId)
-    if (!user) throw new NotFoundError('User not found')
-
-    // Validate balance
-    this.hourRequestValidator.validateHourBalance(
-      requestedHours,
-      user.monthlyHourBalance
-    )
-
-    // Prepare updated data
-    const updatedRequest = {
-      ...request,
-      ...data,
-      date,
-      requestedHours,
-      id: requestId,
-    }
-
-    return this.hourRequestRepository.update(updatedRequest)
   }
 }

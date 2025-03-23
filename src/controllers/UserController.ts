@@ -100,74 +100,16 @@ export class UserController {
   })
 
   updateUser = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.updateProfile(
-      parseInt(req.params.id),
-      req.body
-    )
+    const userId = parseInt(req.params.id)
+    const profileImage = req.file as Express.Multer.File
+
+    const user = await this.userService.updateProfileImage(userId, profileImage)
+
     ApiResponseHandler.success(res, user, 'User updated successfully')
   })
 
   deleteUser = asyncHandler(async (req: Request, res: Response) => {
     await this.userService.deleteUser(parseInt(req.params.id))
     ApiResponseHandler.success(res, null, 'User deleted successfully', 204)
-  })
-
-  // New methods for user request management
-  deleteOwnLeaveRequest = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    const requestId = parseInt(req.params.requestId)
-
-    await this.userService.deleteOwnLeaveRequest(userId, requestId)
-    ApiResponseHandler.success(
-      res,
-      null,
-      'Leave request deleted successfully',
-      204
-    )
-  })
-
-  updateOwnLeaveRequest = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    const requestId = parseInt(req.params.requestId)
-
-    const updatedRequest = await this.userService.updateOwnLeaveRequest(
-      userId,
-      requestId,
-      req.body
-    )
-    ApiResponseHandler.success(
-      res,
-      updatedRequest,
-      'Leave request updated successfully'
-    )
-  })
-
-  deleteOwnHourRequest = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    const requestId = parseInt(req.params.requestId)
-
-    await this.userService.deleteOwnHourRequest(userId, requestId)
-    ApiResponseHandler.success(
-      res,
-      null,
-      'Hour request deleted successfully',
-      204
-    )
-  })
-
-  updateOwnHourRequest = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!.userId
-    const requestId = parseInt(req.params.requestId)
-
-    const updatedRequest = await this.userService.updateOwnHourRequest(
-      userId,
-      requestId,
-      req.body
-    )
-    ApiResponseHandler.success(
-      res,
-      updatedRequest,
-      'Hour request updated successfully'
-    )
   })
 }

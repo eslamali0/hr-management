@@ -20,11 +20,9 @@ export class UserRepository implements IUserRepository {
   }
 
   async update(id: number, data: Partial<User>): Promise<void> {
-    await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id },
-        data,
-      })
+    await prisma.user.update({
+      where: { id },
+      data,
     })
   }
 
