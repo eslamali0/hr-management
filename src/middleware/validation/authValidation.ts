@@ -23,7 +23,7 @@ const registerSchema = z.object({
       .int({ message: 'Department ID must be a valid integer' })
       .optional(),
     role: z
-      .enum(['user', 'admin'], {
+      .enum(['User', 'Admin'], {
         message: 'Role must be either "user" or "admin"',
       })
       .optional(),

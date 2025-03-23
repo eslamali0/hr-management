@@ -2,6 +2,7 @@ import { injectable } from 'inversify'
 import prisma from '../../lib/prisma'
 import { Department, User } from '@prisma/client'
 import { IUserRepository } from '../interfaces/IUserRepository'
+import { UserRole } from '../../constants/userRoles'
 
 @injectable()
 export class UserRepository implements IUserRepository {
@@ -54,7 +55,7 @@ export class UserRepository implements IUserRepository {
     page: number
     totalPages: number
   }> {
-    const where = filters || {}
+    const where = { ...filters, role: UserRole.USER }
     const orderBy = sort ? [sort] : []
 
     const [users, total] = await Promise.all([

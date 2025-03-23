@@ -5,6 +5,7 @@ import { IUserService } from '../services/interfaces/IUserService'
 import { asyncHandler } from '../utils/errorHandler'
 import { NotFoundError } from '../utils/errors'
 import { ApiResponseHandler } from '../utils/apiResponse'
+import { UserRole } from '../constants/userRoles'
 
 @injectable()
 export class UserController {
@@ -16,7 +17,7 @@ export class UserController {
   createUser = asyncHandler(async (req: Request, res: Response) => {
     const user = await this.userService.createUser({
       ...req.body,
-      role: 'user',
+      role: UserRole.USER,
     })
     ApiResponseHandler.success(res, user, 'User created successfully', 201)
   })

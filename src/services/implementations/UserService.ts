@@ -6,6 +6,7 @@ import { inject, injectable } from 'inversify'
 import { TYPES } from '../../config/types'
 import { Department, User } from '@prisma/client'
 import { IImageService } from '../interfaces/IImageService'
+import { UserRole } from '../../constants/userRoles'
 
 @injectable()
 export class UserService implements IUserService {
@@ -29,7 +30,7 @@ export class UserService implements IUserService {
     const user = {
       ...userData,
       password: hashedPassword,
-      role: userData.role || 'user',
+      role: userData.role || UserRole.USER,
       annualLeaveBalance: userData.annualLeaveBalance || 21,
       monthlyHourBalance: userData.monthlyHourBalance || 3,
     } as User
@@ -48,7 +49,7 @@ export class UserService implements IUserService {
     const user = {
       ...userData,
       password: hashedPassword,
-      role: userData.role || 'user',
+      role: userData.role || UserRole.USER,
     } as User
 
     return this.userRepository.create(user)
