@@ -116,6 +116,7 @@ export class UserService implements IUserService {
     try {
       const imageUrl = await this.imagesService.uploadImage(profileImage!)
 
+      // Delete old image if it exists
       if (user.profileImageUrl) {
         const publicId = this.imagesService.getPublicIdFromUrl(
           user.profileImageUrl
@@ -124,11 +125,11 @@ export class UserService implements IUserService {
         if (publicId) {
           await this.imagesService.deleteImage(publicId)
         }
-
-        await this.userRepository.update(userId, {
-          profileImageUrl: imageUrl,
-        })
       }
+
+      await this.userRepository.update(userId, {
+        profileImageUrl: imageUrl,
+      })
     } catch (error) {
       throw new Error('Error uploading profile image')
     }
