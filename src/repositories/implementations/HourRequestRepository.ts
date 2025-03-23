@@ -23,17 +23,11 @@ export class HourRequestRepository implements IHourRequestRepository {
   }
 
   async update(request: HourRequest): Promise<void> {
-    try {
-      await prisma.hourRequest.update({
-        where: { id: request.id },
-        data: request,
-        include: {
-          user: true,
-        },
-      })
-    } catch (error) {
-      throw error
-    }
+    const { id, ...updateData } = request
+    await prisma.hourRequest.update({
+      where: { id: request.id },
+      data: updateData,
+    })
   }
 
   async approveRequestWithTransaction(
@@ -52,7 +46,7 @@ export class HourRequestRepository implements IHourRequestRepository {
         // Update request status
         await prismaClient.hourRequest.update({
           where: { id: requestId },
-          data: { status: 'approved' },
+          data: { status: RequestStatus.APPROVED },
         })
       })
     } catch (error) {
@@ -64,7 +58,7 @@ export class HourRequestRepository implements IHourRequestRepository {
     try {
       await prisma.hourRequest.update({
         where: { id: requestId },
-        data: { status: 'rejected' },
+        data: { status: RequestStatus.REJECTED },
       })
     } catch (error) {
       throw new Error('Failed to reject hour request')

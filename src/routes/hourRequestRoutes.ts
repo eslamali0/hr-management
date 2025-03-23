@@ -57,5 +57,18 @@ export const hourRequestRouter = (container: Container) => {
     hourRequestController.rejectRequest
   )
 
+  // User's own hour request management
+  router.put(
+    '/hour-requests/:requestId',
+    isAuthenticated,
+    hourRequestController.updateOwnHourRequest
+  )
+
+  router.delete(
+    '/hour-requests/:requestId',
+    isAuthenticated,
+    hourRequestController.deleteOwnHourRequest
+  )
+
   return router
 }

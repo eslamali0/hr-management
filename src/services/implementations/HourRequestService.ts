@@ -11,12 +11,15 @@ import {
 } from '../../utils/errors'
 import { IHourRequestService } from '../interfaces/IHourRequestService'
 import { RequestStatus } from '../../constants/requestStatus'
+import { IHourRequestValidator } from '../interfaces/IHourRequestValidator'
 
 @injectable()
 export class HourRequestService implements IHourRequestService {
   constructor(
     @inject(TYPES.HourRequestRepository)
     private readonly hourRequestRepository: IHourRequestRepository,
+    @inject(TYPES.HourRequestValidator)
+    private readonly hourRequestValidator: IHourRequestValidator,
     @inject(TYPES.UserRepository)
     private readonly userRepository: IUserRepository
   ) {}
@@ -25,7 +28,8 @@ export class HourRequestService implements IHourRequestService {
   private async validateAndPrepareRequest(
     userId: number,
     requestData: Partial<HourRequest>,
-    existingRequest?: HourRequest
+    existingRequest?: HourRequest,
+    requestId?: number
   ): Promise<HourRequest> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
@@ -41,15 +45,9 @@ export class HourRequestService implements IHourRequestService {
       throw new ValidationError('Date is required')
     }
 
+    // Validate date format
     if (isNaN(requestDate.getTime())) {
       throw new ValidationError('Invalid date format')
-    }
-
-    // Check if date is in the past
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (requestDate < today) {
-      throw new ValidationError('Cannot submit hour request for past dates')
     }
 
     // Get requested hours from input or existing request
@@ -58,56 +56,47 @@ export class HourRequestService implements IHourRequestService {
         ? Number(requestData.requestedHours)
         : existingRequest?.requestedHours
 
-    if (!requestedHours || requestedHours <= 0) {
-      throw new ValidationError('Requested hours must be greater than 0')
+    if (!requestedHours) {
+      throw new ValidationError('Requested hours are required')
     }
 
-    if (requestedHours > user.monthlyHourBalance) {
-      throw new ValidationError(
-        `Insufficient hour balance. Available: ${user.monthlyHourBalance} hours`
-      )
-    }
-
-    // Check for existing request on the same date (only for new requests or date changes)
+    // Validate date (checks if it's in the future)
+    // For updates, we need to exclude the current request from the validation
     if (
       !existingRequest ||
       (existingRequest &&
         requestData.date &&
         existingRequest.date.getTime() !== requestDate.getTime())
     ) {
-      const overlappingRequest =
-        await this.hourRequestRepository.findByUserIdAndDate(
-          userId,
-          requestDate
-        )
-
-      if (
-        overlappingRequest &&
-        (!existingRequest || overlappingRequest.id !== existingRequest.id)
-      ) {
-        throw new ValidationError(
-          'An hour request already exists for this date'
-        )
-      }
+      await this.hourRequestValidator.validateRequestDates(
+        userId,
+        requestDate,
+        requestId
+      )
     }
+
+    // Validate hour balance
+    this.hourRequestValidator.validateHourBalance(
+      requestedHours,
+      user.monthlyHourBalance
+    )
 
     // Prepare the request object
     return {
-      ...(existingRequest || {}),
       ...requestData,
       date: requestDate,
+      id: existingRequest?.id || undefined,
       requestedHours,
       status: existingRequest ? existingRequest.status : RequestStatus.PENDING,
-      userId,
     } as HourRequest
   }
 
   async submitHourRequest(
     userId: number,
     requestData: Partial<HourRequest>
-  ): Promise<void> {
+  ): Promise<HourRequest> {
     const request = await this.validateAndPrepareRequest(userId, requestData)
-    await this.hourRequestRepository.create(request)
+    return this.hourRequestRepository.create(request)
   }
 
   async updateHourRequest(
@@ -126,6 +115,18 @@ export class HourRequestService implements IHourRequestService {
       throw new ForbiddenError('You can only update your own requests')
     }
 
+    // Check if the request date is in the past - do this check BEFORE checking status
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const requestDate = new Date(existingRequest.date)
+    requestDate.setHours(0, 0, 0, 0)
+
+    if (requestDate < today) {
+      throw new ValidationError('Cannot modify past hour requests')
+    }
+
+    // Only check status after confirming the request is not in the past
     if (existingRequest.status !== RequestStatus.PENDING) {
       throw new BadRequestError('Only pending requests can be updated')
     }
@@ -134,7 +135,8 @@ export class HourRequestService implements IHourRequestService {
     const updatedRequest = await this.validateAndPrepareRequest(
       userId,
       requestData,
-      existingRequest
+      existingRequest,
+      requestId
     )
 
     // Update the request
@@ -208,5 +210,33 @@ export class HourRequestService implements IHourRequestService {
     }
 
     return this.hourRequestRepository.findByUserId(userId)
+  }
+
+  async deleteOwnHourRequest(userId: number, requestId: number): Promise<void> {
+    const request = await this.hourRequestRepository.findById(requestId)
+
+    if (!request) {
+      throw new NotFoundError('Hour request not found')
+    }
+
+    if (request.userId !== userId) {
+      throw new ForbiddenError('You can only delete your own requests')
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestError('Only pending requests can be deleted')
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const requestDate = new Date(request.date)
+    requestDate.setHours(0, 0, 0, 0)
+
+    if (requestDate < today) {
+      throw new BadRequestError('Cannot delete past requests')
+    }
+
+    await this.hourRequestRepository.delete(requestId)
   }
 }

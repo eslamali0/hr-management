@@ -11,19 +11,23 @@ export class HourRequestValidator implements IHourRequestValidator {
     private readonly hourRequestRepository: IHourRequestRepository
   ) {}
 
-  async validateRequestDates(userId: number, date: Date): Promise<void> {
+  async validateRequestDates(
+    userId: number,
+    date: Date,
+    requestId?: number
+  ): Promise<void> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     if (date < today) {
-      throw new ValidationError('Cannot modify past hour requests')
+      throw new ValidationError('Cannot request or modify hours for past days')
     }
 
     const existingRequest =
       await this.hourRequestRepository.findByUserIdAndDate(userId, date)
 
-    if (existingRequest) {
-      throw new ValidationError('Hour request already exists for this date')
+    if (existingRequest && (!requestId || existingRequest.id !== requestId)) {
+      throw new ValidationError('Hour request already exists or this date')
     }
   }
 
