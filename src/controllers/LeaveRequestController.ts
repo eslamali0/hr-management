@@ -58,4 +58,33 @@ export class LeaveRequestController {
       'User leave requests retrieved successfully'
     )
   })
+
+  deleteOwnLeaveRequest = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId
+    const requestId = parseInt(req.params.requestId)
+
+    await this.leaveRequestService.deleteOwnLeaveRequest(userId, requestId)
+    ApiResponseHandler.success(
+      res,
+      null,
+      'Leave request deleted successfully',
+      204
+    )
+  })
+
+  updateOwnLeaveRequest = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.userId
+    const requestId = parseInt(req.params.requestId)
+
+    const updatedRequest = await this.leaveRequestService.updateOwnLeaveRequest(
+      userId,
+      requestId,
+      req.body
+    )
+    ApiResponseHandler.success(
+      res,
+      updatedRequest,
+      'Leave request updated successfully'
+    )
+  })
 }

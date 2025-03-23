@@ -1,50 +1,63 @@
-import { Router } from "express";
-import { Container } from "inversify";
-import { TYPES } from "../config/types";
-import { LeaveRequestController } from "../controllers/LeaveRequestController";
-import { isAuthenticated, isAdmin, isUser } from "../middleware/auth";
-import { validateLeaveRequest } from "../middleware/validation/leaveRequestValidation";
+import { Router } from 'express'
+import { Container } from 'inversify'
+import { TYPES } from '../config/types'
+import { LeaveRequestController } from '../controllers/LeaveRequestController'
+import { isAuthenticated, isAdmin, isUser } from '../middleware/auth'
+import { validateLeaveRequest } from '../middleware/validation/leaveRequestValidation'
 
 export const leaveRequestRouter = (container: Container) => {
-  const router = Router();
+  const router = Router()
   const leaveRequestController = container.get<LeaveRequestController>(
-    TYPES.LeaveRequestController,
-  );
+    TYPES.LeaveRequestController
+  )
 
   router.post(
-    "/:userId",
+    '/:userId',
     isAuthenticated,
     isUser,
     validateLeaveRequest,
-    leaveRequestController.submitRequest,
-  );
+    leaveRequestController.submitRequest
+  )
 
   router.get(
-    "/pending",
+    '/pending',
     isAuthenticated,
     isAdmin,
-    leaveRequestController.getPendingRequests,
-  );
+    leaveRequestController.getPendingRequests
+  )
 
   router.get(
-    "/user/:userId",
+    '/user/:userId',
     isAuthenticated,
-    leaveRequestController.getUserRequests,
-  );
+    leaveRequestController.getUserRequests
+  )
 
   router.patch(
-    "/:requestId/approve",
+    '/:requestId/approve',
     isAuthenticated,
     isAdmin,
-    leaveRequestController.approveRequest,
-  );
+    leaveRequestController.approveRequest
+  )
 
   router.patch(
-    "/:requestId/reject",
+    '/:requestId/reject',
     isAuthenticated,
     isAdmin,
-    leaveRequestController.rejectRequest,
-  );
+    leaveRequestController.rejectRequest
+  )
 
-  return router;
-};
+  //LeaveRequest's own request management
+  router.put(
+    '/leave-requests/:requestId',
+    isAuthenticated,
+    leaveRequestController.updateOwnLeaveRequest
+  )
+
+  router.delete(
+    '/leave-requests/:requestId',
+    isAuthenticated,
+    leaveRequestController.deleteOwnLeaveRequest
+  )
+
+  return router
+}

@@ -25,4 +25,12 @@ export interface ILeaveRequestService {
     requestId: number,
     requestData: Partial<LeaveRequest>
   ): Promise<void>
+
+  // New methods for user request management
+  deleteOwnLeaveRequest(userId: number, requestId: number): Promise<void>
+  updateOwnLeaveRequest(
+    userId: number,
+    requestId: number,
+    data: any
+  ): Promise<any>
 }

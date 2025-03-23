@@ -4,21 +4,19 @@ import { ValidationError } from '../utils/errors'
 import { inject, injectable } from 'inversify'
 import { TYPES } from '../config/types'
 import { ILeaveRequestValidator } from './interfaces/ILeaveRequestValidator'
-import { IUserRepository } from '../repositories/interfaces/IUserRepository'
 
 @injectable()
 export class LeaveRequestValidator implements ILeaveRequestValidator {
   constructor(
     @inject(TYPES.LeaveRequestRepository)
-    private readonly leaveRequestRepository: ILeaveRequestRepository,
-    @inject(TYPES.UserRepository)
-    private readonly userRepository: IUserRepository
+    private readonly leaveRequestRepository: ILeaveRequestRepository
   ) {}
 
   async validateRequestDates(
     userId: number,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    requestIdToExclude?: number
   ): Promise<void> {
     DateCalculator.validateDateRange(startDate, endDate)
 
@@ -29,7 +27,14 @@ export class LeaveRequestValidator implements ILeaveRequestValidator {
         endDate
       )
 
-    if (overlappingRequests.length > 0) {
+    // For updates, exclude the current request from overlap check
+    const filteredRequests = requestIdToExclude
+      ? overlappingRequests.filter(
+          (request) => request.id !== requestIdToExclude
+        )
+      : overlappingRequests
+
+    if (filteredRequests.length > 0) {
       throw new ValidationError(
         'You already have a leave request for this date range'
       )

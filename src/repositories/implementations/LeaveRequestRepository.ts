@@ -201,7 +201,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
         // Update request status only
         await prismaClient.leaveRequest.update({
           where: { id: requestId },
-          data: { status: 'Approved' },
+          data: { status: RequestStatus.APPROVED },
         })
       })
     } catch (error) {
