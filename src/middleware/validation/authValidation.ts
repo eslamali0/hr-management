@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { validateZodRequest } from './validateZodRequest'
-import { UserRole } from '@/constants/userRoles'
+import { UserRole } from '../../constants/userRoles'
 
 const registerSchema = z.object({
   body: z.object({
