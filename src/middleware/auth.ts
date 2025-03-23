@@ -1,17 +1,18 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { AuthenticationError, AuthorizationError } from "../utils/errors";
+import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
+import { AuthenticationError, AuthorizationError } from '../utils/errors'
+import { UserRole } from '../constants/userRoles'
 
 interface JwtPayload {
-  userId: number;
-  email: string;
-  role: string;
+  userId: number
+  email: string
+  role: string
 }
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload;
+      user?: JwtPayload
     }
   }
 }
@@ -19,38 +20,38 @@ declare global {
 export const isAuthenticated = async (
   req: Request,
   _res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const token = req.headers.authorization?.split(' ')[1]
     if (!token) {
-      throw new AuthenticationError("No token provided");
+      throw new AuthenticationError('No token provided')
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {
-      throw new Error("JWT_SECRET environment variable is not set");
+      throw new Error('JWT_SECRET environment variable is not set')
     }
 
-    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload
 
-    req.user = decoded;
-    next();
+    req.user = decoded
+    next()
   } catch (error) {
-    next(new AuthenticationError("Invalid token"));
+    next(new AuthenticationError('Invalid token'))
   }
-};
+}
 
 export const isUser = (req: Request, _res: Response, next: NextFunction) => {
-  if (req.user?.role !== "user") {
-    return next(new AuthenticationError("User access required"));
+  if (req.user?.role !== UserRole.USER) {
+    return next(new AuthenticationError('User access required'))
   }
-  next();
-};
+  next()
+}
 
 export const isAdmin = (req: Request, _res: Response, next: NextFunction) => {
-  if (req.user?.role !== "admin") {
-    return next(new AuthorizationError("Admin access required"));
+  if (req.user?.role !== UserRole.ADMIN) {
+    return next(new AuthorizationError('Admin access required'))
   }
-  next();
-};
+  next()
+}

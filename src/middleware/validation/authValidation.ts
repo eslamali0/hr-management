@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { validateZodRequest } from './validateZodRequest'
+import { UserRole } from '@/constants/userRoles'
 
 const registerSchema = z.object({
   body: z.object({
@@ -22,11 +23,7 @@ const registerSchema = z.object({
       .number()
       .int({ message: 'Department ID must be a valid integer' })
       .optional(),
-    role: z
-      .enum(['User', 'Admin'], {
-        message: 'Role must be either "user" or "admin"',
-      })
-      .optional(),
+    role: z.nativeEnum(UserRole).optional(),
   }),
 })
 
