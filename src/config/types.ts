@@ -16,4 +16,6 @@ export const TYPES = {
   StatsController: Symbol.for('StatsController'),
   LeaveRequestValidator: Symbol.for('LeaveRequestValidator'),
   HourRequestValidator: Symbol.for('HourRequestValidator'),
+  CloudinaryConfig: Symbol.for('CloudinaryConfig'),
+  ImageService: Symbol.for('ImageService'),
 }
