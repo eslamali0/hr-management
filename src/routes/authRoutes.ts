@@ -6,8 +6,9 @@ import {
   validateLogin,
   validateChangePassword,
   validateRegister,
+  validateUpdateProfile,
 } from '../middleware/validation/authValidation'
-import { isAuthenticated } from '../middleware/auth'
+import { isAdmin, isAuthenticated } from '../middleware/auth'
 
 export const authRouter = (container: Container) => {
   const router = Router()
@@ -21,6 +22,14 @@ export const authRouter = (container: Container) => {
     isAuthenticated,
     validateChangePassword,
     authController.changePassword
+  )
+
+  router.patch(
+    '/profile',
+    isAuthenticated,
+    isAdmin,
+    validateUpdateProfile,
+    authController.updateProfile
   )
 
   return router

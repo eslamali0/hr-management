@@ -36,4 +36,19 @@ export class AuthController {
     const user = await this.authService.register(req.body)
     ApiResponseHandler.success(res, user, 'Registration successful', 201)
   })
+
+  updateProfile = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new AuthenticationError('User not authenticated')
+    }
+
+    const { name, departmentId } = req.body
+
+    await this.authService.updateProfile(req.user.userId, {
+      name,
+      departmentId,
+    })
+
+    ApiResponseHandler.success(res, null, 'Profile updated successfully')
+  })
 }

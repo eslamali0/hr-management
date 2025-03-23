@@ -80,6 +80,13 @@ export class AuthService implements IAuthService {
     await this.userService.updatePassword(userId, hashedPassword)
   }
 
+  async updateProfile(
+    userId: number,
+    profileData: Pick<User, 'name' | 'departmentId'>
+  ): Promise<void> {
+    await this.userService.updateProfile(userId, profileData)
+  }
+
   private generateToken(user: User): string {
     const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {
