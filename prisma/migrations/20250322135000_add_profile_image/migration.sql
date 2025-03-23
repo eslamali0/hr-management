@@ -1,0 +1,21 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- AlterTable
+ALTER TABLE [dbo].[User] DROP CONSTRAINT [User_role_df];
+ALTER TABLE [dbo].[User] ADD CONSTRAINT [User_role_df] DEFAULT 'User' FOR [role];
+ALTER TABLE [dbo].[User] ADD [profileImageUrl] NVARCHAR(1000);
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH
