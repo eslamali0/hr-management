@@ -27,6 +27,9 @@ import { IHourRequestValidator } from '../services/interfaces/IHourRequestValida
 import { HourRequestValidator } from '../services/HourRequestValidator'
 import { ILeaveRequestValidator } from '../services/interfaces/ILeaveRequestValidator'
 import { LeaveRequestValidator } from '../services/LeaveRequestValidator'
+import { CloudinaryConfig } from './cloudinary'
+import { IImageService } from '../services/interfaces/IImageService'
+import { ImageService } from '../services/implementations/ImageService'
 
 export const setupContainer = () => {
   const container = new Container()
@@ -75,6 +78,16 @@ export const setupContainer = () => {
   container
     .bind<ILeaveRequestValidator>(TYPES.LeaveRequestValidator)
     .to(LeaveRequestValidator)
+
+  //Image Service
+  container
+    .bind<CloudinaryConfig>(TYPES.CloudinaryConfig)
+    .to(CloudinaryConfig)
+    .inSingletonScope()
+  container
+    .bind<IImageService>(TYPES.ImageService)
+    .to(ImageService)
+    .inSingletonScope()
 
   return container
 }

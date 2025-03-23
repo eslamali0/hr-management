@@ -3,6 +3,7 @@ import { IAttendanceService } from '../interfaces/IAttendanceService'
 import prisma from '../../lib/prisma'
 import { Attendance } from '@prisma/client'
 import { NotFoundError } from '../../utils/errors'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class AttendanceService implements IAttendanceService {
@@ -67,7 +68,7 @@ export class AttendanceService implements IAttendanceService {
     // Get all approved leave requests that include today
     const leaveRequests = await prisma.leaveRequest.findMany({
       where: {
-        status: 'Approved',
+        status: RequestStatus.APPROVED,
         startDate: { lte: today },
         endDate: { gte: today },
       },
