@@ -88,15 +88,16 @@ export class HourRequestService implements IHourRequestService {
       id: existingRequest?.id || undefined,
       requestedHours,
       status: existingRequest ? existingRequest.status : RequestStatus.PENDING,
+      userId,
     } as HourRequest
   }
 
   async submitHourRequest(
     userId: number,
     requestData: Partial<HourRequest>
-  ): Promise<HourRequest> {
+  ): Promise<void> {
     const request = await this.validateAndPrepareRequest(userId, requestData)
-    return this.hourRequestRepository.create(request)
+    this.hourRequestRepository.create(request)
   }
 
   async updateHourRequest(

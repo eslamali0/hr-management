@@ -4,7 +4,7 @@ export interface IHourRequestService {
   submitHourRequest(
     userId: number,
     requestData: Partial<HourRequest>
-  ): Promise<HourRequest>
+  ): Promise<void>
   approveHourRequest(requestId: number): Promise<void>
   rejectHourRequest(requestId: number): Promise<void>
   getPendingRequests(): Promise<

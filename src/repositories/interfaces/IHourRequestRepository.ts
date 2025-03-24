@@ -2,9 +2,7 @@ import { RequestStatus } from '../../constants/requestStatus'
 import { HourRequest, User } from '@prisma/client'
 
 export interface IHourRequestRepository {
-  create(
-    request: Omit<HourRequest, 'id'>
-  ): Promise<HourRequest & { user: User }>
+  create(request: Omit<HourRequest, 'id'>): Promise<void>
   update(request: HourRequest): Promise<void>
   delete(id: number): Promise<void>
   findById(id: number): Promise<HourRequest | null>

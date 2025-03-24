@@ -7,19 +7,10 @@ import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class HourRequestRepository implements IHourRequestRepository {
-  async create(
-    request: Omit<HourRequest, 'id'>
-  ): Promise<HourRequest & { user: User }> {
-    try {
-      return await prisma.hourRequest.create({
-        data: request,
-        include: {
-          user: true,
-        },
-      })
-    } catch (error) {
-      throw error
-    }
+  async create(request: Omit<HourRequest, 'id'>): Promise<void> {
+    await prisma.hourRequest.create({
+      data: request,
+    })
   }
 
   async update(request: HourRequest): Promise<void> {
