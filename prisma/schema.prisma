@@ -44,6 +44,7 @@ model LeaveRequest {
   reason        String?  @db.Text
   userId        Int
   user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
 }
 
 model HourRequest {
@@ -53,6 +54,7 @@ model HourRequest {
   status         String   @default("Pending")
   userId         Int
   user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
 }
 
 model Department {
