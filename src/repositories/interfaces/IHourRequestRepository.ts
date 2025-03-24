@@ -1,5 +1,5 @@
 import { RequestStatus } from '../../constants/requestStatus'
-import { HourRequest, User } from '@prisma/client'
+import { HourRequest } from '@prisma/client'
 
 export interface IHourRequestRepository {
   create(request: Omit<HourRequest, 'id'>): Promise<void>
@@ -17,6 +17,7 @@ export interface IHourRequestRepository {
     (Partial<HourRequest> & {
       user: {
         name: string | null
+        profileImageUrl: string | null
         department: { name: string } | null
       }
     })[]

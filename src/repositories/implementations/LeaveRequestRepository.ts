@@ -8,16 +8,9 @@ import { RequestStatus } from '../../constants/requestStatus'
 @injectable()
 export class LeaveRequestRepository implements ILeaveRequestRepository {
   async create(request: Omit<LeaveRequest, 'id'>): Promise<void> {
-    try {
-      await prisma.leaveRequest.create({
-        data: request,
-        include: {
-          user: true,
-        },
-      })
-    } catch (error) {
-      throw error
-    }
+    await prisma.leaveRequest.create({
+      data: request,
+    })
   }
 
   async update(request: LeaveRequest): Promise<void> {

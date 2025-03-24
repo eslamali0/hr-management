@@ -108,6 +108,7 @@ export class HourRequestRepository implements IHourRequestRepository {
     (Partial<HourRequest> & {
       user: {
         name: string | null
+        profileImageUrl: string | null
         department: { name: string } | null
       }
     })[]
@@ -119,9 +120,11 @@ export class HourRequestRepository implements IHourRequestRepository {
           id: true,
           date: true,
           requestedHours: true,
+          status: true,
           user: {
             select: {
               name: true,
+              profileImageUrl: true,
               department: {
                 select: {
                   name: true,
@@ -129,6 +132,9 @@ export class HourRequestRepository implements IHourRequestRepository {
               },
             },
           },
+        },
+        orderBy: {
+          date: 'asc',
         },
       })
     } catch (error) {

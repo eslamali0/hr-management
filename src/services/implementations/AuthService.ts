@@ -29,7 +29,10 @@ export class AuthService implements IAuthService {
     password: string
   ): Promise<{
     token: string
-    user: Pick<User, 'id' | 'name' | 'email' | 'role' | 'departmentId'>
+    user: Pick<
+      User,
+      'id' | 'name' | 'email' | 'role' | 'departmentId' | 'profileImageUrl'
+    >
   }> {
     const user = await this.userService.findUserByEmail(email)
     if (!user) {
@@ -54,6 +57,7 @@ export class AuthService implements IAuthService {
         email: user.email,
         role: user.role,
         departmentId: user.departmentId,
+        profileImageUrl: user.profileImageUrl,
       },
     }
   }

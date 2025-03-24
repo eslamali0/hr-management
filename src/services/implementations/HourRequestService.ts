@@ -197,6 +197,7 @@ export class HourRequestService implements IHourRequestService {
     (Partial<HourRequest> & {
       user: {
         name: string | null
+        profileImageUrl: string | null
         department: { name: string } | null
       }
     })[]

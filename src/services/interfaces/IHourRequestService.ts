@@ -1,3 +1,4 @@
+import { RequestStatus } from '../../constants/requestStatus'
 import { HourRequest } from '@prisma/client'
 
 export interface IHourRequestService {
@@ -7,10 +8,16 @@ export interface IHourRequestService {
   ): Promise<void>
   approveHourRequest(requestId: number): Promise<void>
   rejectHourRequest(requestId: number): Promise<void>
-  getPendingRequests(): Promise<
+  getPendingRequests(
+    status:
+      | RequestStatus.APPROVED
+      | RequestStatus.PENDING
+      | RequestStatus.REJECTED
+  ): Promise<
     (Partial<HourRequest> & {
       user: {
         name: string | null
+        profileImageUrl: string | null
         department: { name: string } | null
       }
     })[]
