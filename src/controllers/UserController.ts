@@ -62,8 +62,8 @@ export class UserController {
   })
 
   getAllUsers = asyncHandler(async (req: Request, res: Response) => {
-    const page = parseInt(req.query.page as string) || 1
-    const limit = parseInt(req.query.limit as string) || 10
+    const page = parseInt(req.query.page as string)
+    const limit = parseInt(req.query.limit as string)
     const filters = req.query.filters
       ? JSON.parse(req.query.filters as string)
       : undefined

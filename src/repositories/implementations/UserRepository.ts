@@ -67,7 +67,7 @@ export class UserRepository implements IUserRepository {
         select: {
           id: true,
           name: true,
-          department: { select: { name: true } },
+          department: { select: { id: true, name: true } },
         },
       }),
       prisma.user.count({ where }),
