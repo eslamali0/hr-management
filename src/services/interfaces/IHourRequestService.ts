@@ -8,12 +8,7 @@ export interface IHourRequestService {
   ): Promise<void>
   approveHourRequest(requestId: number): Promise<void>
   rejectHourRequest(requestId: number): Promise<void>
-  getPendingRequests(
-    status:
-      | RequestStatus.APPROVED
-      | RequestStatus.PENDING
-      | RequestStatus.REJECTED
-  ): Promise<
+  getPendingRequests(): Promise<
     (Partial<HourRequest> & {
       user: {
         name: string | null
