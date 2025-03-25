@@ -2,78 +2,60 @@ import { injectable } from 'inversify'
 import prisma from '../../lib/prisma'
 import { Attendance } from '@prisma/client'
 import { IAttendanceRepository } from '../interfaces/IAttendanceRepository'
-import { NotFoundError } from '../../utils/errors'
+import { AttendanceStatus } from '../../constants/attendanceStatus'
 
 @injectable()
 export class AttendanceRepository implements IAttendanceRepository {
-  async create(attendance: Omit<Attendance, 'id'>): Promise<Attendance> {
+  async upsertAttendance(
+    userId: number,
+    date: Date,
+    status: AttendanceStatus
+  ): Promise<Attendance> {
     try {
-      return prisma.attendance.create({
-        data: attendance,
-        include: { user: true },
+      return await prisma.attendance.upsert({
+        where: {
+          Attendance_userId_date_key: {
+            userId,
+            date,
+          },
+        },
+        update: {
+          status,
+        },
+        create: {
+          userId,
+          date,
+          status,
+        },
       })
     } catch (error) {
+      console.error('Error in upsertAttendance:', error)
       throw error
     }
   }
 
-  async update(attendance: Attendance): Promise<Attendance> {
-    try {
-      return prisma.attendance.update({
-        where: { id: attendance.id },
-        data: attendance,
-        include: { user: true },
-      })
-    } catch (error) {
-      throw error
-    }
+  async findAttendance(userId: number, date: Date): Promise<Attendance | null> {
+    return await prisma.attendance.findUnique({
+      where: {
+        Attendance_userId_date_key: {
+          userId,
+          date,
+        },
+      },
+    })
   }
 
-  async delete(id: number): Promise<void> {
-    try {
-      await prisma.attendance.delete({ where: { id } })
-    } catch (error) {
-      throw error
-    }
+  async createAttendance(
+    userId: number,
+    date: Date,
+    status: AttendanceStatus
+  ): Promise<Attendance> {
+    return await prisma.attendance.create({
+      data: {
+        userId,
+        date,
+        status,
+      },
+    })
   }
-
-  async findById(id: number): Promise<Attendance | null> {
-    try {
-      const attendance = await prisma.attendance.findUnique({
-        where: { id },
-        include: { user: true },
-      })
-      if (!attendance) {
-        throw new NotFoundError('Attendance record not found')
-      }
-      return attendance
-    } catch (error) {
-      throw error
-    }
-  }
-
-  async findAll(): Promise<Attendance[]> {
-    try {
-      return prisma.attendance.findMany({
-        include: { user: true },
-      })
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // async findByUserId(userId: number): Promise<Attendance | null> {
-  //   try {
-  //     const attendance = await prisma.attendance.findUnique({
-  //       where: { userId },
-  //       include: { user: true },
-  //     })
-  //     if (!attendance) {
-  //       throw new NotFoundError('Attendance record not found')
-  //     }
-  //     return attendance
-  //   } catch (error) {
-  //     throw error
-  //   }
-  // }
 }
