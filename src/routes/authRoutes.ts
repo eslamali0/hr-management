@@ -25,7 +25,7 @@ export const authRouter = (container: Container) => {
   )
 
   router.patch(
-    '/profile',
+    'users/:userId/profile',
     isAuthenticated,
     isAdmin,
     validateUpdateProfile,
