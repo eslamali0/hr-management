@@ -38,13 +38,10 @@ export class AuthController {
   })
 
   updateProfile = asyncHandler(async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw new AuthenticationError('User not authenticated')
-    }
-
+    const userId = parseInt(req.params.userId, 10)
     const { name, departmentId } = req.body
 
-    await this.authService.updateProfile(req.user.userId, {
+    await this.authService.updateProfile(userId, {
       name,
       departmentId,
     })
