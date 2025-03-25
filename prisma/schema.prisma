@@ -32,7 +32,7 @@ model Attendance {
   userId Int
   user   User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, date])
+  @@unique([userId, date], name: "Attendance_userId_date_key")
 }
 
 model LeaveRequest {
@@ -40,7 +40,7 @@ model LeaveRequest {
   startDate     DateTime @db.Date
   endDate       DateTime @db.Date
   requestedDays Float
-  status        String   @default("Pending") // PENDING/APPROVED/REJECTED
+  status        String   @default("Pending")
   reason        String?  @db.Text
   userId        Int
   user          User     @relation(fields: [userId], references: [id])
