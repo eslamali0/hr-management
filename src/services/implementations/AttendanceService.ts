@@ -1,58 +1,37 @@
-import { injectable } from 'inversify'
+import { inject, injectable } from 'inversify'
 import { IAttendanceService } from '../interfaces/IAttendanceService'
-import prisma from '../../lib/prisma'
 import { Attendance } from '@prisma/client'
 import { NotFoundError } from '../../utils/errors'
-import { RequestStatus } from '../../constants/requestStatus'
+import { TYPES } from '../../config/types'
+import { IAttendanceRepository } from '../../repositories/interfaces/IAttendanceRepository'
+import { IAttendanceProcessor } from '../interfaces/IAttendanceProcessor'
+import prisma from '../../lib/prisma'
 
 @injectable()
 export class AttendanceService implements IAttendanceService {
-  async markAttendance(
-    userId: number,
-    status: 'Present' | 'On_Leave' | 'Hourly_Leave'
-  ): Promise<Attendance> {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user) {
-      throw new NotFoundError('User not found')
-    }
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    return await prisma.attendance.upsert({
-      where: {
-        userId_date: {
-          userId,
-          date: today,
-        },
-      },
-      update: { status },
-      create: {
-        userId,
-        date: today,
-        status,
-      },
-    })
-  }
+  constructor(
+    @inject(TYPES.AttendanceRepository)
+    private readonly attendanceRepository: IAttendanceRepository,
+    @inject(TYPES.LeaveAttendanceProcessor)
+    private readonly leaveProcessor: IAttendanceProcessor,
+    @inject(TYPES.HourlyLeaveProcessor)
+    private readonly hourlyLeaveProcessor: IAttendanceProcessor,
+    @inject(TYPES.DefaultAttendanceProcessor)
+    private readonly defaultProcessor: IAttendanceProcessor
+  ) {}
 
   async getCurrentAttendance(userId: number): Promise<Attendance | null> {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    return await prisma.attendance.findUnique({
-      where: {
-        userId_date: {
-          userId,
-          date: today,
-        },
-      },
-    })
+    return await this.attendanceRepository.findAttendance(userId, today)
   }
 
-  // New method for daily processing
   async processDailyAttendance(): Promise<void> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const date = new Date()
+    const today = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    )
 
     // Skip weekends (5 = Friday, 6 = Saturday in your system)
     const dayOfWeek = today.getDay()
@@ -60,64 +39,30 @@ export class AttendanceService implements IAttendanceService {
       return // No processing needed for weekends
     }
 
-    // Get all active users
-    const users = await prisma.user.findMany({
-      select: { id: true },
-    })
+    console.log('Processing attendance for:', today)
 
-    // Get all approved leave requests that include today
-    const leaveRequests = await prisma.leaveRequest.findMany({
-      where: {
-        status: RequestStatus.APPROVED,
-        startDate: { lte: today },
-        endDate: { gte: today },
-      },
-    })
+    try {
+      // Track which users have been processed
+      let processedUserIds = new Set<number>()
 
-    // Create a map for quick lookup
-    const onLeaveUserIds = new Set(leaveRequests.map((req) => req.userId))
+      // Process in order of priority without transaction
+      processedUserIds = await this.leaveProcessor.process(
+        today,
+        processedUserIds
+      )
+      console.log('Leave processor completed')
 
-    // Process each user
-    for (const user of users) {
-      // Check if user has an approved leave for today
-      if (onLeaveUserIds.has(user.id)) {
-        // Create/update attendance record with on_leave status
-        await prisma.attendance.upsert({
-          where: {
-            userId_date: {
-              userId: user.id,
-              date: today,
-            },
-          },
-          update: { status: 'On_Leave' },
-          create: {
-            userId: user.id,
-            date: today,
-            status: 'On_Leave',
-          },
-        })
-      } else {
-        // Only create default record if no manual entry exists
-        const existingRecord = await prisma.attendance.findUnique({
-          where: {
-            userId_date: {
-              userId: user.id,
-              date: today,
-            },
-          },
-        })
+      processedUserIds = await this.hourlyLeaveProcessor.process(
+        today,
+        processedUserIds
+      )
+      console.log('Hourly leave processor completed')
 
-        if (!existingRecord) {
-          // Create default attendance record (present)
-          await prisma.attendance.create({
-            data: {
-              userId: user.id,
-              date: today,
-              status: 'Present',
-            },
-          })
-        }
-      }
+      await this.defaultProcessor.process(today, processedUserIds)
+      console.log('Default processor completed')
+    } catch (error) {
+      console.error('Error during attendance processing:', error)
+      throw error
     }
   }
 }
