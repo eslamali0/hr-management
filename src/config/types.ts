@@ -18,4 +18,9 @@ export const TYPES = {
   HourRequestValidator: Symbol.for('HourRequestValidator'),
   CloudinaryConfig: Symbol.for('CloudinaryConfig'),
   ImageService: Symbol.for('ImageService'),
+  AttendanceRepository: Symbol.for('AttendanceRepository'),
+  LeaveAttendanceProcessor: Symbol.for('LeaveAttendanceProcessor'),
+  HourlyLeaveProcessor: Symbol.for('HourlyLeaveProcessor'),
+  DefaultAttendanceProcessor: Symbol.for('DefaultAttendanceProcessor'),
+  PendingRequestProcessor: Symbol.for('PendingRequestProcessor'),
 }

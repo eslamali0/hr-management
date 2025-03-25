@@ -30,6 +30,15 @@ import { LeaveRequestValidator } from '../services/LeaveRequestValidator'
 import { CloudinaryConfig } from './cloudinary'
 import { IImageService } from '../services/interfaces/IImageService'
 import { ImageService } from '../services/implementations/ImageService'
+import { IAttendanceService } from '../services/interfaces/IAttendanceService'
+import { AttendanceService } from '../services/implementations/AttendanceService'
+import { IAttendanceRepository } from '../repositories/interfaces/IAttendanceRepository'
+import { AttendanceRepository } from '../repositories/implementations/AttendanceRepository'
+import { IAttendanceProcessor } from '../services/interfaces/IAttendanceProcessor'
+import { LeaveAttendanceProcessor } from '../services/implementations/processors/LeaveAttendanceProcessor'
+import { HourlyLeaveProcessor } from '../services/implementations/processors/HourlyLeaveProcessor'
+import { DefaultAttendanceProcessor } from '../services/implementations/processors/DefaultAttendanceProcessor'
+import { PendingRequestProcessor } from '../services/implementations/processors/PendingRequestProcessor'
 
 export const setupContainer = () => {
   const container = new Container()
@@ -89,6 +98,26 @@ export const setupContainer = () => {
     .to(ImageService)
     .inSingletonScope()
 
+  // Register attendance-related services
+  container
+    .bind<IAttendanceService>(TYPES.AttendanceService)
+    .to(AttendanceService)
+  container
+    .bind<IAttendanceRepository>(TYPES.AttendanceRepository)
+    .to(AttendanceRepository)
+  container
+    .bind<IAttendanceProcessor>(TYPES.LeaveAttendanceProcessor)
+    .to(LeaveAttendanceProcessor)
+  container
+    .bind<IAttendanceProcessor>(TYPES.HourlyLeaveProcessor)
+    .to(HourlyLeaveProcessor)
+  container
+    .bind<IAttendanceProcessor>(TYPES.DefaultAttendanceProcessor)
+    .to(DefaultAttendanceProcessor)
+
+  container
+    .bind<PendingRequestProcessor>(TYPES.PendingRequestProcessor)
+    .to(PendingRequestProcessor)
   return container
 }
 
