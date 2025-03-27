@@ -41,6 +41,7 @@ const leaveRequestSchema = z
         message: 'End date must be on or after start date',
         path: ['endDate'],
       }),
+    query: z.unknown().optional(),
   })
   .strict()
 
