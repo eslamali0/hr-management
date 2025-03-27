@@ -3,7 +3,12 @@ import { Container } from 'inversify'
 import { TYPES } from '../config/types'
 import { LeaveRequestController } from '../controllers/LeaveRequestController'
 import { isAuthenticated, isAdmin, isUser } from '../middleware/auth'
-import { validateLeaveRequest } from '../middleware/validation/leaveRequestValidation'
+import {
+  validateLeaveRequest,
+  validateLeaveRequestId,
+  validateUpdateLeaveRequest,
+  validateUserIdParam,
+} from '../middleware/validation/leaveRequestValidation'
 
 export const leaveRequestRouter = (container: Container) => {
   const router = Router()
@@ -29,6 +34,7 @@ export const leaveRequestRouter = (container: Container) => {
   router.get(
     '/user/:userId',
     isAuthenticated,
+    validateUserIdParam,
     leaveRequestController.getUserRequests
   )
 
@@ -36,6 +42,7 @@ export const leaveRequestRouter = (container: Container) => {
     '/:requestId/approve',
     isAuthenticated,
     isAdmin,
+    validateLeaveRequestId,
     leaveRequestController.approveRequest
   )
 
@@ -43,19 +50,21 @@ export const leaveRequestRouter = (container: Container) => {
     '/:requestId/reject',
     isAuthenticated,
     isAdmin,
+    validateLeaveRequestId,
     leaveRequestController.rejectRequest
   )
 
-  //LeaveRequest's own request management
   router.put(
     '/leave-requests/:requestId',
     isAuthenticated,
+    validateUpdateLeaveRequest,
     leaveRequestController.updateOwnLeaveRequest
   )
 
   router.delete(
     '/leave-requests/:requestId',
     isAuthenticated,
+    validateLeaveRequestId,
     leaveRequestController.deleteOwnLeaveRequest
   )
 

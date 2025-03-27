@@ -1,53 +1,105 @@
 import { z } from 'zod'
 import { validateZodRequest } from './validateZodRequest'
+import { validateCombinedRequest } from './validateCombinedRequest'
 
-const leaveRequestSchema = z.object({
-  params: z.object({
-    userId: z
-      .string()
-      .regex(/^\d+$/, { message: 'Invalid user ID' })
-      .transform(Number),
-  }),
-  body: z
-    .object({
-      startDate: z
-        .string()
-        .datetime({ message: 'Start date must be a valid date' })
-        .refine(
-          (value) => {
-            const startDate = new Date(value)
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            return startDate >= today
-          },
-          { message: 'Start date cannot be in the past' }
-        ),
-      endDate: z
-        .string()
-        .datetime({ message: 'End date must be a valid date' }),
-      reason: z.string().trim().min(5).max(500).optional(),
-    })
-    .refine(
-      (data) => {
-        const start = new Date(data.startDate)
-        const end = new Date(data.endDate)
-        return end >= start
-      },
-      {
+// Reusable schemas
+const numericIdSchema = z.coerce
+  .number()
+  .int('ID must be an integer')
+  .positive('ID must be a positive number')
+
+const dateSchema = z.coerce
+  .date()
+  .refine((date) => !isNaN(date.getTime()), 'Invalid date format')
+  .refine((date) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return date >= today
+  }, 'Date cannot be in the past')
+
+// Submit leave request schema
+const leaveRequestSchema = z
+  .object({
+    params: z
+      .object({
+        userId: numericIdSchema,
+      })
+      .strict(),
+    body: z
+      .object({
+        startDate: dateSchema,
+        endDate: dateSchema,
+        reason: z
+          .string()
+          .trim()
+          .min(5, 'Reason must be at least 5 characters')
+          .max(500)
+          .optional(),
+      })
+      .strict()
+      .refine((data) => data.endDate >= data.startDate, {
         message: 'End date must be on or after start date',
         path: ['endDate'],
-      }
-    ),
-})
+      }),
+  })
+  .strict()
 
-const leaveRequestIdSchema = z.object({
-  params: z.object({
-    requestId: z
-      .string()
-      .regex(/^\d+$/, { message: 'Invalid request ID' })
-      .transform(Number),
-  }),
-})
+// Request ID validation
+const leaveRequestIdSchema = z
+  .object({
+    requestId: numericIdSchema,
+  })
+  .strict()
 
-export const validateLeaveRequest = validateZodRequest(leaveRequestSchema)
-export const validateLeaveRequestId = validateZodRequest(leaveRequestIdSchema)
+// Update leave request schema
+const updateLeaveRequestSchema = z
+  .object({
+    params: z
+      .object({
+        requestId: numericIdSchema,
+      })
+      .strict(),
+    body: z
+      .object({
+        startDate: dateSchema.optional(),
+        endDate: dateSchema.optional(),
+        reason: z.string().trim().min(5).max(500).optional(),
+      })
+      .strict()
+      .refine((data) => Object.keys(data).length > 0, {
+        message: 'At least one field must be provided for update',
+      })
+      .refine(
+        (data) => {
+          if (data.startDate && data.endDate) {
+            return data.endDate >= data.startDate
+          }
+          return true
+        },
+        {
+          message: 'End date must be on or after start date',
+          path: ['endDate'],
+        }
+      ),
+  })
+  .strict()
+
+// User ID validation
+const userIdParamsSchema = z
+  .object({
+    userId: numericIdSchema,
+  })
+  .strict()
+
+export const validateLeaveRequest = validateCombinedRequest(leaveRequestSchema)
+export const validateLeaveRequestId = validateZodRequest(
+  leaveRequestIdSchema,
+  'params'
+)
+export const validateUpdateLeaveRequest = validateCombinedRequest(
+  updateLeaveRequestSchema
+)
+export const validateUserIdParam = validateZodRequest(
+  userIdParamsSchema,
+  'params'
+)
