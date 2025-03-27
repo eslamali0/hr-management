@@ -18,10 +18,8 @@ export class AuthService implements IAuthService {
 
   async register(
     userData: Partial<User> & { password: string }
-  ): Promise<Omit<User, 'password'>> {
-    const user = await this.userService.register(userData)
-
-    return user
+  ): Promise<void> {
+    await this.userService.register(userData)
   }
 
   async login(

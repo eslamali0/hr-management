@@ -14,13 +14,13 @@ export class AuthController {
   ) {}
 
   login = asyncHandler(async (req: Request, res: Response) => {
-    const { email, password } = req.body
+    const { email, password } = res.locals.validatedData
     const result = await this.authService.login(email, password)
     ApiResponseHandler.success(res, result, 'Login successful')
   })
 
   changePassword = asyncHandler(async (req: Request, res: Response) => {
-    const { currentPassword, newPassword } = req.body
+    const { currentPassword, newPassword } = res.locals.validatedData
     if (!req.user) {
       throw new AuthenticationError('User not authenticated')
     }
@@ -33,13 +33,13 @@ export class AuthController {
   })
 
   register = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.authService.register(req.body)
-    ApiResponseHandler.success(res, user, 'Registration successful', 201)
+    await this.authService.register(res.locals.validatedData)
+    ApiResponseHandler.success(res, null, 'Registration successful', 201)
   })
 
   updateProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = parseInt(req.params.userId, 10)
-    const { name, departmentId } = req.body
+    const { name, departmentId } = res.locals.validatedData
 
     await this.authService.updateProfile(userId, {
       name,
