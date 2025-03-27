@@ -1,11 +1,9 @@
 import { inject, injectable } from 'inversify'
 import { IAttendanceService } from '../interfaces/IAttendanceService'
 import { Attendance } from '@prisma/client'
-import { NotFoundError } from '../../utils/errors'
 import { TYPES } from '../../config/types'
 import { IAttendanceRepository } from '../../repositories/interfaces/IAttendanceRepository'
 import { IAttendanceProcessor } from '../interfaces/IAttendanceProcessor'
-import prisma from '../../lib/prisma'
 
 @injectable()
 export class AttendanceService implements IAttendanceService {
@@ -64,5 +62,26 @@ export class AttendanceService implements IAttendanceService {
       console.error('Error during attendance processing:', error)
       throw error
     }
+  }
+
+  async getDailyStatus(
+    page: number,
+    limit: number
+  ): Promise<{
+    data: Array<{
+      id: number
+      name: string | null
+      profileImageUrl: string | null
+      department: { name: string } | null
+      status: string
+      hourRequested: number | null
+      leaveFrom: Date | null
+      leaveTo: Date | null
+    }>
+    total: number
+    page: number
+    totalPages: number
+  }> {
+    return await this.attendanceRepository.getDailyStatus(page, limit)
   }
 }
