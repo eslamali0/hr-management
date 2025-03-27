@@ -15,15 +15,18 @@ export class UserController {
   ) {}
 
   createUser = asyncHandler(async (req: Request, res: Response) => {
+    const userData = res.locals.validatedData
+
     const user = await this.userService.createUser({
-      ...req.body,
+      ...userData,
       role: UserRole.USER,
     })
     ApiResponseHandler.success(res, user, 'User created successfully', 201)
   })
 
   findByEmail = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.findUserByEmail(req.params.email)
+    const { email } = res.locals.validatedData
+    const user = await this.userService.findUserByEmail(email)
     if (!user) {
       throw new NotFoundError('User not found')
     }
@@ -31,15 +34,17 @@ export class UserController {
   })
 
   findById = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.findById(parseInt(req.params.id))
+    const { id } = res.locals.validatedData
+
+    const user = await this.userService.findById(id)
     ApiResponseHandler.success(res, user, 'User found successfully')
   })
 
   updateLeaveBalance = asyncHandler(async (req: Request, res: Response) => {
-    await this.userService.updateLeaveBalance(
-      parseInt(req.params.userId),
-      req.body.amount
-    )
+    const { userId } = res.locals.validatedData.params
+    const { amount } = res.locals.validatedData.body
+
+    await this.userService.updateLeaveBalance(userId, amount)
     ApiResponseHandler.success(
       res,
       null,
@@ -49,10 +54,10 @@ export class UserController {
   })
 
   updateHourBalance = asyncHandler(async (req: Request, res: Response) => {
-    await this.userService.updateHourBalance(
-      parseInt(req.params.userId),
-      req.body.amount
-    )
+    const { userId } = res.locals.validatedData.params
+    const { amount } = res.locals.validatedData.body
+
+    await this.userService.updateHourBalance(userId, amount)
     ApiResponseHandler.success(
       res,
       null,
@@ -62,14 +67,7 @@ export class UserController {
   })
 
   getAllUsers = asyncHandler(async (req: Request, res: Response) => {
-    const page = parseInt(req.query.page as string)
-    const limit = parseInt(req.query.limit as string)
-    const filters = req.query.filters
-      ? JSON.parse(req.query.filters as string)
-      : undefined
-    const sort = req.query.sort
-      ? JSON.parse(req.query.sort as string)
-      : undefined
+    const { page, limit, filters, sort } = res.locals.validatedData
 
     const result = await this.userService.getAllUsers(
       page,

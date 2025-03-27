@@ -4,6 +4,7 @@ import { TYPES } from '../config/types'
 import { UserController } from '../controllers/UserController'
 import {
   validateCreateUser,
+  validateEmail,
   validateUserId,
   validateUserQuery,
 } from '../middleware/validation/userValidation'
@@ -42,6 +43,7 @@ export const createUserRoutes = (container: Container) => {
     '/email/:email',
     isAuthenticated,
     isAdmin,
+    validateEmail,
     userController.findByEmail
   )
   router.put(

@@ -36,11 +36,17 @@ const updateBalanceSchema = z.object({
         .positive({ message: 'Balance amount must be a positive number' }),
     })
     .strict(),
+  query: z.object({}).strict(),
 })
 
 // User ID validation schema
 const userIdParamsSchema = z.object({
-  userId: numericIdSchema,
+  id: numericIdSchema,
+})
+
+// Email validation schema
+const emailParamsSchema = z.object({
+  email: z.string().email({ message: 'Invalid email format' }),
 })
 
 // User query params schema
@@ -63,3 +69,4 @@ export const validateUpdateBalance =
   validateCombinedRequest(updateBalanceSchema)
 export const validateUserId = validateZodRequest(userIdParamsSchema, 'params')
 export const validateUserQuery = validateZodRequest(userQuerySchema, 'query')
+export const validateEmail = validateZodRequest(emailParamsSchema, 'params')
