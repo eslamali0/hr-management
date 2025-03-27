@@ -39,6 +39,7 @@ import { LeaveAttendanceProcessor } from '../services/implementations/processors
 import { HourlyLeaveProcessor } from '../services/implementations/processors/HourlyLeaveProcessor'
 import { DefaultAttendanceProcessor } from '../services/implementations/processors/DefaultAttendanceProcessor'
 import { PendingRequestProcessor } from '../services/implementations/processors/PendingRequestProcessor'
+import { AttendanceController } from '../controllers/AttendanceController'
 
 export const setupContainer = () => {
   const container = new Container()
@@ -69,6 +70,7 @@ export const setupContainer = () => {
   container
     .bind<HourRequestController>(TYPES.HourRequestController)
     .to(HourRequestController)
+  container.bind(TYPES.AttendanceController).to(AttendanceController)
 
   // Register password service
   container

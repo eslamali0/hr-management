@@ -5,6 +5,7 @@ import { authRouter } from './authRoutes'
 import { leaveRequestRouter } from './leaveRequestRoutes'
 import { hourRequestRouter } from './hourRequestRoutes'
 import { statsRouter } from './statsRoutes'
+import { attendanceRouter } from './attendanceRoutes'
 
 export const createRoutes = (container: Container) => {
   const router = Router()
@@ -14,6 +15,7 @@ export const createRoutes = (container: Container) => {
   router.use('/leave-requests', leaveRequestRouter(container))
   router.use('/hour-requests', hourRequestRouter(container))
   router.use('/stats', statsRouter(container))
+  router.use('/attendance', attendanceRouter(container))
 
   return router
 }
