@@ -13,16 +13,16 @@ export class HourRequestController {
   ) {}
 
   submitRequest = asyncHandler(async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.userId)
-    const requestData = req.body
+    const { userId } = res.locals.validatedData.params
+    const requestData = res.locals.validatedData.body
 
     await this.hourRequestService.submitHourRequest(userId, requestData)
 
-    ApiResponseHandler.success(res, 'Hour request submitted successfully')
+    ApiResponseHandler.success(res, null, 'Hour request submitted successfully')
   })
 
   approveRequest = asyncHandler(async (req: Request, res: Response) => {
-    const requestId = parseInt(req.params.requestId)
+    const { requestId } = res.locals.validatedData
 
     const hourRequest = await this.hourRequestService.approveHourRequest(
       requestId
@@ -36,7 +36,7 @@ export class HourRequestController {
   })
 
   rejectRequest = asyncHandler(async (req: Request, res: Response) => {
-    const requestId = parseInt(req.params.requestId)
+    const { requestId } = res.locals.validatedData
 
     const hourRequest = await this.hourRequestService.rejectHourRequest(
       requestId
@@ -60,7 +60,7 @@ export class HourRequestController {
   })
 
   getUserRequests = asyncHandler(async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.userId)
+    const { userId } = res.locals.validatedData
 
     const userRequests = await this.hourRequestService.getUserRequests(userId)
 
@@ -73,7 +73,7 @@ export class HourRequestController {
 
   deleteOwnHourRequest = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId
-    const requestId = parseInt(req.params.requestId)
+    const { requestId } = res.locals.validatedData
 
     await this.hourRequestService.deleteOwnHourRequest(userId, requestId)
     ApiResponseHandler.success(
@@ -86,12 +86,13 @@ export class HourRequestController {
 
   updateOwnHourRequest = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId
-    const requestId = parseInt(req.params.requestId)
+    const { requestId } = res.locals.validatedData.params
+    const updateData = res.locals.validatedData.body
 
     const updatedRequest = await this.hourRequestService.updateHourRequest(
       userId,
       requestId,
-      req.body
+      updateData
     )
     ApiResponseHandler.success(
       res,

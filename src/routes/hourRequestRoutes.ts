@@ -5,6 +5,7 @@ import { validateUserId } from '../middleware/validation/userValidation'
 import {
   validateSubmitHourRequest,
   validateHourRequestId,
+  validateUpdateHourRequest,
 } from '../middleware/validation/hourRequestValidation'
 import { isAdmin, isAuthenticated } from '../middleware/auth'
 import { validateUserOwnership } from '../middleware/validateUserOwnership'
@@ -61,12 +62,14 @@ export const hourRequestRouter = (container: Container) => {
   router.put(
     '/hour-requests/:requestId',
     isAuthenticated,
+    validateUpdateHourRequest,
     hourRequestController.updateOwnHourRequest
   )
 
   router.delete(
     '/hour-requests/:requestId',
     isAuthenticated,
+    validateHourRequestId,
     hourRequestController.deleteOwnHourRequest
   )
 

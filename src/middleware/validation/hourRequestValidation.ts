@@ -1,42 +1,67 @@
-import { z } from "zod";
-import { validateZodRequest } from "./validateZodRequest";
+import { z } from 'zod'
+import { validateZodRequest } from './validateZodRequest'
+import { validateCombinedRequest } from './validateCombinedRequest'
 
-const submitHourRequestSchema = z.object({
-  params: z.object({
-    userId: z
-      .string()
-      .regex(/^\d+$/, { message: "Invalid user ID" })
-      .transform(Number),
-  }),
-  body: z.object({
-    date: z.string().datetime({ message: "Invalid date format" }),
-    requestedHours: z
-      .number()
-      .int()
-      .min(1)
-      .max(3)
-      .or(
-        z
-          .string()
-          .regex(/^[1-3]$/)
-          .transform(Number),
-      )
-      .refine((val) => val >= 1 && val <= 3, {
-        message: "Requested hours must be a whole number between 1 and 3",
+// Reusable validators
+const numericIdSchema = z.coerce
+  .number()
+  .int('ID must be an integer')
+  .positive('ID must be a positive number')
+
+const dateSchema = z.coerce
+  .date()
+  .refine((date) => !isNaN(date.getTime()), 'Invalid date format')
+
+const hourRequestSchema = z.coerce
+  .number()
+  .int('Hours must be a whole number')
+  .min(1, 'Minimum 1 hour required')
+  .max(3, 'Maximum 3 hours allowed')
+
+// For combined validation (multiple sources)
+const submitHourRequestSchema = z
+  .object({
+    params: z.object({ userId: numericIdSchema }).strict(),
+    body: z
+      .object({
+        date: dateSchema,
+        requestedHours: hourRequestSchema,
+      })
+      .strict(),
+    query: z.unknown().optional(),
+  })
+  .strict()
+
+// For single source validation (params only)
+const hourRequestIdParamsSchema = z.object({
+  requestId: numericIdSchema,
+})
+
+// For update hour request
+const updateHourRequestSchema = z
+  .object({
+    params: z.object({ requestId: numericIdSchema }).strict(),
+    body: z
+      .object({
+        date: dateSchema.optional(),
+        requestedHours: hourRequestSchema.optional(),
+      })
+      .strict()
+      .refine((data) => Object.keys(data).length > 0, {
+        message: 'At least one field must be provided for update',
       }),
-  }),
-});
+  })
+  .strict()
 
-const hourRequestIdSchema = z.object({
-  params: z.object({
-    requestId: z
-      .string()
-      .regex(/^\d+$/, { message: "Invalid request ID" })
-      .transform(Number),
-  }),
-});
+export const validateSubmitHourRequest = validateCombinedRequest(
+  submitHourRequestSchema
+)
 
-export const validateSubmitHourRequest = validateZodRequest(
-  submitHourRequestSchema,
-);
-export const validateHourRequestId = validateZodRequest(hourRequestIdSchema);
+export const validateHourRequestId = validateZodRequest(
+  hourRequestIdParamsSchema,
+  'params'
+)
+
+export const validateUpdateHourRequest = validateCombinedRequest(
+  updateHourRequestSchema
+)
