@@ -2,7 +2,11 @@ import { Router } from 'express'
 import { Container } from 'inversify'
 import { TYPES } from '../config/types'
 import { UserController } from '../controllers/UserController'
-import { validateCreateUser } from '../middleware/validation/userValidation'
+import {
+  validateCreateUser,
+  validateUserId,
+  validateUserQuery,
+} from '../middleware/validation/userValidation'
 import { isAuthenticated, isAdmin, isUser } from '../middleware/auth'
 import { upload } from '../middleware/multerMiddleware'
 
@@ -20,8 +24,20 @@ export const createUserRoutes = (container: Container) => {
     userController.createUser
   )
 
-  router.get('/', isAuthenticated, isAdmin, userController.getAllUsers)
-  router.get('/:id', isAuthenticated, isAdmin, userController.findById)
+  router.get(
+    '/',
+    isAuthenticated,
+    isAdmin,
+    validateUserQuery,
+    userController.getAllUsers
+  )
+  router.get(
+    '/:id',
+    isAuthenticated,
+    isAdmin,
+    validateUserId,
+    userController.findById
+  )
   router.get(
     '/email/:email',
     isAuthenticated,

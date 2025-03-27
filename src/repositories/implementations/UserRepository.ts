@@ -6,10 +6,8 @@ import { UserRole } from '../../constants/userRoles'
 
 @injectable()
 export class UserRepository implements IUserRepository {
-  async create(
-    user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<User> {
-    return prisma.user.create({
+  async create(user: User): Promise<void> {
+    await prisma.user.create({
       data: {
         ...user,
       },

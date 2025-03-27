@@ -1,8 +1,8 @@
 import { Department, User } from '@prisma/client'
 
 export interface IUserService {
-  createUser(userData: Partial<User>): Promise<User>
-  register(userData: Partial<User>): Promise<Omit<User, 'password'>>
+  createUser(userData: Partial<User>): Promise<void>
+  register(userData: Partial<User>): Promise<void>
   findUserByEmail(email: string): Promise<User | null>
   updateLeaveBalance(userId: number, amount: number): Promise<void>
   updateHourBalance(userId: number, hours: number): Promise<void>

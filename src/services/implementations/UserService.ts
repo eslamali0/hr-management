@@ -19,7 +19,7 @@ export class UserService implements IUserService {
     private readonly passwordService: IPasswordService
   ) {}
 
-  async createUser(userData: Partial<User>): Promise<User> {
+  async createUser(userData: Partial<User>): Promise<void> {
     const existingUser = await this.userRepository.findByEmail(userData.email!)
     if (existingUser) {
       throw new ValidationError('Email already exists')
@@ -35,10 +35,10 @@ export class UserService implements IUserService {
       monthlyHourBalance: userData.monthlyHourBalance || 3,
     } as User
 
-    return this.userRepository.create(user)
+    this.userRepository.create(user)
   }
 
-  async register(userData: Partial<User>): Promise<Omit<User, 'password'>> {
+  async register(userData: Partial<User>): Promise<void> {
     const existingUser = await this.userRepository.findByEmail(userData.email!)
     if (existingUser) {
       throw new ValidationError('Email already exists')
@@ -52,7 +52,7 @@ export class UserService implements IUserService {
       role: userData.role || UserRole.USER,
     } as User
 
-    return this.userRepository.create(user)
+    this.userRepository.create(user)
   }
 
   async findUserByEmail(email: string): Promise<User | null> {
