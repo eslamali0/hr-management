@@ -128,7 +128,7 @@ export class UserService implements IUserService {
   async updateProfileImage(
     userId: number,
     profileImage?: Express.Multer.File
-  ): Promise<void> {
+  ): Promise<Pick<User, 'profileImageUrl'>> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
@@ -147,9 +147,13 @@ export class UserService implements IUserService {
         }
       }
 
-      await this.userRepository.update(userId, {
+      const updatedUser = await this.userRepository.update(userId, {
         profileImageUrl: imageUrl,
       })
+
+      return {
+        profileImageUrl: updatedUser.profileImageUrl || null,
+      }
     } catch (error) {
       throw new Error('Error uploading profile image')
     }

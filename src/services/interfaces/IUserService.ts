@@ -19,7 +19,7 @@ export interface IUserService {
   updateProfileImage(
     userId: number,
     profileImage: Express.Multer.File
-  ): Promise<void>
+  ): Promise<Pick<User, 'profileImageUrl'>>
   getAllUsers(
     page?: number,
     limit?: number,

@@ -9,7 +9,6 @@ export const validateZodRequest = <T extends ZodType<any, any, any>>(
   source: ValidationSource
 ) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    console.log('Params:', req[source])
     const result = schema.safeParse(req[source])
 
     if (!result.success) {
