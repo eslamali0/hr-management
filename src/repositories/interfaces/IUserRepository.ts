@@ -16,7 +16,7 @@ export interface IUserRepository {
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
   ): Promise<{
-    data: Pick<User, 'id' | 'name'>[]
+    data: Pick<User, 'id' | 'name' | 'profileImageUrl'>[]
     total: number
     page: number
     totalPages: number

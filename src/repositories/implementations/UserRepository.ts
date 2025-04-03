@@ -59,7 +59,7 @@ export class UserRepository implements IUserRepository {
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
   ): Promise<{
-    data: Pick<User, 'name' | 'id'>[]
+    data: Pick<User, 'name' | 'id' | 'profileImageUrl'>[]
     total: number
     page: number
     totalPages: number
@@ -76,6 +76,7 @@ export class UserRepository implements IUserRepository {
         select: {
           id: true,
           name: true,
+          profileImageUrl: true,
           department: { select: { id: true, name: true } },
         },
       }),
