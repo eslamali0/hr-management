@@ -18,11 +18,22 @@ export class UserRepository implements IUserRepository {
     })
   }
 
-  async update(id: number, data: Partial<User>): Promise<void> {
-    await prisma.user.update({
+  async update(id: number, data: Partial<User>): Promise<Partial<User>> {
+    const user = await prisma.user.update({
       where: { id },
       data,
+      select: {
+        name: true,
+        profileImageUrl: true,
+        department: {
+          select: {
+            name: true,
+          },
+        },
+      },
     })
+
+    return user
   }
 
   async delete(id: number): Promise<void> {

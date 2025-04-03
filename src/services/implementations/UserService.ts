@@ -86,7 +86,7 @@ export class UserService implements IUserService {
       departmentId?: number
       profileImage?: Express.Multer.File
     }
-  ): Promise<void> {
+  ): Promise<Partial<User>> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
@@ -120,7 +120,9 @@ export class UserService implements IUserService {
       profileImageUrl: imageUrl,
     }
 
-    await this.userRepository.update(userId, allowedUpdates)
+    const userUpdated = await this.userRepository.update(userId, allowedUpdates)
+
+    return userUpdated
   }
 
   async updateProfileImage(

@@ -42,12 +42,12 @@ export class AuthController {
     const { name, departmentId } = res.locals.validatedData.body
     const profileImage = req.file as Express.Multer.File
 
-    await this.authService.updateProfile(userId, {
+    const user = await this.authService.updateProfile(userId, {
       name,
       departmentId,
       profileImage,
     })
 
-    ApiResponseHandler.success(res, null, 'Profile updated successfully')
+    ApiResponseHandler.success(res, user, 'Profile updated successfully')
   })
 }

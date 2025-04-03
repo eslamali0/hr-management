@@ -15,7 +15,7 @@ export interface IUserService {
       departmentId?: number
       profileImage?: Express.Multer.File
     }
-  ): Promise<void>
+  ): Promise<Partial<User>>
   updateProfileImage(
     userId: number,
     profileImage: Express.Multer.File

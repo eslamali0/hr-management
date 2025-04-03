@@ -21,5 +21,5 @@ export interface IAuthService {
       departmentId?: number
       profileImage?: Express.Multer.File
     }
-  ): Promise<void>
+  ): Promise<Partial<User>>
 }

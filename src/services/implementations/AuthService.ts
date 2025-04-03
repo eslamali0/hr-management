@@ -89,8 +89,9 @@ export class AuthService implements IAuthService {
       departmentId?: number
       profileImage?: Express.Multer.File
     }
-  ): Promise<void> {
-    await this.userService.updateProfile(userId, data)
+  ): Promise<Partial<User>> {
+    const user = await this.userService.updateProfile(userId, data)
+    return user
   }
 
   private generateToken(user: User): string {
