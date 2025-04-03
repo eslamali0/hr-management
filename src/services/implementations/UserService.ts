@@ -81,7 +81,11 @@ export class UserService implements IUserService {
 
   async updateProfile(
     userId: number,
-    data: Pick<User, 'name' | 'departmentId'>
+    data: {
+      name?: string
+      departmentId?: number
+      profileImage?: Express.Multer.File
+    }
   ): Promise<void> {
     const user = await this.userRepository.findById(userId)
     if (!user) {
@@ -97,10 +101,23 @@ export class UserService implements IUserService {
       }
     }
 
+    const imageUrl = await this.imagesService.uploadImage(data.profileImage!)
+
+    if (user.profileImageUrl) {
+      const publicId = this.imagesService.getPublicIdFromUrl(
+        user.profileImageUrl
+      )
+
+      if (publicId) {
+        await this.imagesService.deleteImage(publicId)
+      }
+    }
+
     // Only allow updating name and departmentId
     const allowedUpdates = {
       name: data.name,
       departmentId: data.departmentId,
+      profileImageUrl: imageUrl,
     }
 
     await this.userRepository.update(userId, allowedUpdates)

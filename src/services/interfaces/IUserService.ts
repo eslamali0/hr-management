@@ -10,7 +10,11 @@ export interface IUserService {
   findById(userId: number): Promise<User | null>
   updateProfile(
     userId: number,
-    data: Pick<User, 'name' | 'departmentId'>
+    data: {
+      name?: string
+      departmentId?: number
+      profileImage?: Express.Multer.File
+    }
   ): Promise<void>
   updateProfileImage(
     userId: number,
