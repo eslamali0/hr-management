@@ -16,6 +16,10 @@ export interface IAuthService {
   register(userData: Partial<User> & { password: string }): Promise<void>
   updateProfile(
     userId: number,
-    profileData: Pick<User, 'name' | 'departmentId'>
+    data: {
+      name?: string
+      departmentId?: number
+      profileImage?: Express.Multer.File
+    }
   ): Promise<void>
 }

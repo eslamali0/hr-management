@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { validateZodRequest } from './validateZodRequest'
 import { UserRole } from '../../constants/userRoles'
+import { validateCombinedRequest } from './validateCombinedRequest'
 
 const emailSchema = z
   .string()
@@ -72,25 +73,29 @@ const changePasswordSchema = z
   })
 
 // Profile Update Schema
-const updateProfileSchema = z
-  .object({
-    name: nameSchema.optional(),
-    departmentId: z
-      .number()
-      .positive('Department ID must be positive')
-      .optional(),
-  })
-  .strict('Unexpected field detected in request')
-  .refine(
-    (data) => {
-      const allowedUpdates = new Set(['name', 'departmentId'])
-      return Object.keys(data).every((key) => allowedUpdates.has(key))
-    },
-    {
-      message: 'Invalid update fields detected',
-      path: [],
-    }
-  )
+const updateProfileSchema = z.object({
+  params: z
+    .object({
+      userId: z.coerce
+        .number()
+        .int('User ID must be a number')
+        .positive('User ID must be positive '),
+    })
+    .strict(),
+  body: z
+    .object({
+      name: nameSchema.optional(),
+      departmentId: z.coerce
+        .number()
+        .int()
+        .positive('Department ID must be positive')
+        .optional()
+        .nullable(),
+      file: z.any().optional(),
+    })
+    .strict(),
+  query: z.unknown().optional(),
+})
 
 // Export validators
 export const validateRegister = validateZodRequest(registerSchema, 'body')
@@ -99,7 +104,5 @@ export const validateChangePassword = validateZodRequest(
   changePasswordSchema,
   'body'
 )
-export const validateUpdateProfile = validateZodRequest(
-  updateProfileSchema,
-  'body'
-)
+export const validateUpdateProfile =
+  validateCombinedRequest(updateProfileSchema)

@@ -9,6 +9,7 @@ import {
   validateUpdateProfile,
 } from '../middleware/validation/authValidation'
 import { isAdmin, isAuthenticated } from '../middleware/auth'
+import { upload } from '../middleware/multerMiddleware'
 
 export const authRouter = (container: Container) => {
   const router = Router()
@@ -28,6 +29,7 @@ export const authRouter = (container: Container) => {
     '/users/:userId/profile',
     isAuthenticated,
     isAdmin,
+    upload.single('profileImage'),
     validateUpdateProfile,
     authController.updateProfile
   )

@@ -84,9 +84,13 @@ export class AuthService implements IAuthService {
 
   async updateProfile(
     userId: number,
-    profileData: Pick<User, 'name' | 'departmentId'>
+    data: {
+      name?: string
+      departmentId?: number
+      profileImage?: Express.Multer.File
+    }
   ): Promise<void> {
-    await this.userService.updateProfile(userId, profileData)
+    await this.userService.updateProfile(userId, data)
   }
 
   private generateToken(user: User): string {
