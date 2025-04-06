@@ -17,6 +17,7 @@ model User {
   name               String?
   department         Department?    @relation(fields: [departmentId], references: [id])
   departmentId       Int?
+  hiringDate         DateTime       @default(now()) @db.Date
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   attendance         Attendance[]
