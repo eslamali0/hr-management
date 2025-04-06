@@ -74,9 +74,6 @@ export class AttendanceRepository implements IAttendanceRepository {
       hourRequested: number | null
       leaveFrom: Date | null
       leaveTo: Date | null
-      leaveTaken: number
-      leaveBalance: number
-      permissionBalance: number
     }>
     total: number
     page: number
@@ -97,8 +94,6 @@ export class AttendanceRepository implements IAttendanceRepository {
           name: true,
           profileImageUrl: true,
           department: { select: { name: true } },
-          annualLeaveBalance: true,
-          monthlyHourBalance: true,
           attendance: {
             where: {
               date: formattedDate,
@@ -111,9 +106,11 @@ export class AttendanceRepository implements IAttendanceRepository {
           },
           leaveRequests: {
             where: {
+              startDate: { lte: formattedDate },
+              endDate: { gte: formattedDate },
               status: RequestStatus.APPROVED,
             },
-            select: { startDate: true, endDate: true, requestedDays: true },
+            select: { startDate: true, endDate: true },
           },
         },
         orderBy: { name: 'asc' },
@@ -124,15 +121,7 @@ export class AttendanceRepository implements IAttendanceRepository {
     const data = users.map((user) => {
       const attendance = user.attendance[0]
       const hourRequest = user.hourRequests[0]
-      const leaveRequest = user.leaveRequests.find(
-        (req) => req.startDate <= formattedDate && req.endDate >= formattedDate
-      )
-
-      // Calculate total leave taken
-      const leaveTaken = user.leaveRequests.reduce(
-        (total, req) => total + req.requestedDays,
-        0
-      )
+      const leaveRequest = user.leaveRequests[0]
 
       return {
         id: user.id,
@@ -143,9 +132,6 @@ export class AttendanceRepository implements IAttendanceRepository {
         hourRequested: hourRequest ? hourRequest.requestedHours : null,
         leaveFrom: leaveRequest ? leaveRequest.startDate : null,
         leaveTo: leaveRequest ? leaveRequest.endDate : null,
-        leaveTaken,
-        leaveBalance: user.annualLeaveBalance,
-        permissionBalance: user.monthlyHourBalance,
       }
     })
     return { data, total, page, totalPages: Math.ceil(total / limit) }
