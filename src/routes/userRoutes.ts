@@ -33,7 +33,7 @@ export const createUserRoutes = (container: Container) => {
     userController.getAllUsers
   )
   router.get(
-    '/:id',
+    '/:userId',
     isAuthenticated,
     isAdmin,
     validateUserId,

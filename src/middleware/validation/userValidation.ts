@@ -41,7 +41,7 @@ const updateBalanceSchema = z.object({
 
 // User ID validation schema
 const userIdParamsSchema = z.object({
-  id: numericIdSchema,
+  userId: numericIdSchema,
 })
 
 // Email validation schema

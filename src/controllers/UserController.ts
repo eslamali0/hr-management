@@ -34,9 +34,9 @@ export class UserController {
   })
 
   findById = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = res.locals.validatedData
+    const { userId } = res.locals.validatedData
 
-    const user = await this.userService.findById(id)
+    const user = await this.userService.findById(userId)
     ApiResponseHandler.success(res, user, 'User found successfully')
   })
 
