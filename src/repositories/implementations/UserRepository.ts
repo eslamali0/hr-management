@@ -59,7 +59,12 @@ export class UserRepository implements IUserRepository {
     filters?: Record<string, any>,
     sort?: Record<string, 'asc' | 'desc'>
   ): Promise<{
-    data: Pick<User, 'name' | 'id' | 'profileImageUrl'>[]
+    data: (Pick<User, 'name' | 'id' | 'profileImageUrl'> & {
+      department?: { id: number; name: string } | null
+      leaveTaken?: number
+      leaveBalance?: number
+      permissionBalance?: number
+    })[]
     total: number
     page: number
     totalPages: number
@@ -77,14 +82,43 @@ export class UserRepository implements IUserRepository {
           id: true,
           name: true,
           profileImageUrl: true,
+          annualLeaveBalance: true,
+          monthlyHourBalance: true,
           department: { select: { id: true, name: true } },
+          leaveRequests: {
+            where: {
+              status: 'Approved',
+            },
+            select: {
+              requestedDays: true,
+            },
+          },
         },
       }),
       prisma.user.count({ where }),
     ])
 
+    // Calculate leave taken, leave balance, and permission balance
+    const enrichedUsers = users.map((user) => {
+      const leaveTaken =
+        user.leaveRequests?.reduce(
+          (total, request) => total + (request.requestedDays || 0),
+          0
+        ) || 0
+
+      return {
+        id: user.id,
+        name: user.name,
+        profileImageUrl: user.profileImageUrl,
+        department: user.department,
+        leaveTaken,
+        leaveBalance: user.annualLeaveBalance || 0,
+        permissionBalance: user.monthlyHourBalance || 0,
+      }
+    })
+
     return {
-      data: users,
+      data: enrichedUsers,
       total,
       page,
       totalPages: Math.ceil(total / limit),
