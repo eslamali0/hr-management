@@ -119,6 +119,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
           user: {
             select: {
               name: true,
+              profileImageUrl: true,
               department: { select: { name: true } },
             },
           },
