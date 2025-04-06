@@ -38,20 +38,14 @@ const hourRequestIdParamsSchema = z.object({
 })
 
 // For update hour request
-const updateHourRequestSchema = z
-  .object({
-    params: z.object({ requestId: numericIdSchema }).strict(),
-    body: z
-      .object({
-        date: dateSchema.optional(),
-        requestedHours: hourRequestSchema.optional(),
-      })
-      .strict()
-      .refine((data) => Object.keys(data).length > 0, {
-        message: 'At least one field must be provided for update',
-      }),
-  })
-  .strict()
+const updateHourRequestSchema = z.object({
+  params: z.object({ requestId: numericIdSchema }).strict(),
+  body: z
+    .object({
+      requestedHours: hourRequestSchema,
+    })
+    .strict(),
+})
 
 export const validateSubmitHourRequest = validateCombinedRequest(
   submitHourRequestSchema

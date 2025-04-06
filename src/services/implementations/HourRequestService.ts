@@ -112,19 +112,14 @@ export class HourRequestService implements IHourRequestService {
       throw new NotFoundError('Hour request not found')
     }
 
-    if (existingRequest.userId !== userId) {
-      throw new ForbiddenError('You can only update your own requests')
+    const user = await this.userRepository.findById(userId)
+
+    if (!user) {
+      throw new NotFoundError('User not found')
     }
 
-    // Check if the request date is in the past - do this check BEFORE checking status
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const requestDate = new Date(existingRequest.date)
-    requestDate.setHours(0, 0, 0, 0)
-
-    if (requestDate < today) {
-      throw new ValidationError('Cannot modify past hour requests')
+    if (existingRequest.userId !== userId) {
+      throw new ForbiddenError('You can only update your own requests')
     }
 
     // Only check status after confirming the request is not in the past
@@ -132,16 +127,16 @@ export class HourRequestService implements IHourRequestService {
       throw new BadRequestError('Only pending requests can be updated')
     }
 
-    // Validate and prepare the updated request
-    const updatedRequest = await this.validateAndPrepareRequest(
-      userId,
-      requestData,
-      existingRequest,
-      requestId
+    this.hourRequestValidator.validateHourBalance(
+      Number(requestData.requestedHours),
+      user.monthlyHourBalance
     )
 
     // Update the request
-    await this.hourRequestRepository.update(updatedRequest)
+    await this.hourRequestRepository.update({
+      id: requestId,
+      requestedHours: requestData.requestedHours,
+    } as HourRequest)
   }
 
   async approveHourRequest(requestId: number): Promise<void> {

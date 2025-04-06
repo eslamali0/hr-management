@@ -1,7 +1,7 @@
 import { injectable } from 'inversify'
 import prisma from '../../lib/prisma'
 import { IHourRequestRepository } from '../interfaces/IHourRequestRepository'
-import { HourRequest, User } from '@prisma/client'
+import { HourRequest } from '@prisma/client'
 import { NotFoundError } from '../../utils/errors'
 import { RequestStatus } from '../../constants/requestStatus'
 
@@ -14,10 +14,10 @@ export class HourRequestRepository implements IHourRequestRepository {
   }
 
   async update(request: HourRequest): Promise<void> {
-    const { id, ...updateData } = request
+    const { id, requestedHours } = request
     await prisma.hourRequest.update({
-      where: { id: request.id },
-      data: updateData,
+      where: { id },
+      data: { requestedHours },
     })
   }
 
