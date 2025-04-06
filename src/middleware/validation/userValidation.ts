@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { validateZodRequest } from './validateZodRequest'
 import { UserRole } from '../../constants/userRoles'
 import { validateCombinedRequest } from './validateCombinedRequest'
+import { isLeapYear } from '../../utils/dateUtils'
 
 // Reusable schemas
 const numericIdSchema = z.coerce
@@ -9,6 +10,19 @@ const numericIdSchema = z.coerce
   .int('ID must be an integer')
   .positive('ID must be a positive number')
 
+const hiringDateSchema = z
+  .union([z.date(), z.string().transform((val) => new Date(val))])
+  .refine((date) => date <= new Date(), 'Hiring date cannot be in the future')
+  .refine((date) => {
+    const month = date.getMonth()
+    const day = date.getDate()
+    return !(month === 1 && day === 29 && !isLeapYear(date.getFullYear()))
+  }, 'Invalid hiring date (February 29 on non-leap year)')
+
+const initialLeaveBalanceSchema = z.coerce
+  .number()
+  .int('Initial leave balance must be an integer')
+  .positive('Initial leave balance must be a positive number')
 // User creation schema
 const createUserSchema = z
   .object({
@@ -19,6 +33,7 @@ const createUserSchema = z
     name: z.string().min(1, { message: 'Name is required' }),
     role: z.nativeEnum(UserRole).optional(),
     departmentId: numericIdSchema.optional(),
+    hiringDate: hiringDateSchema,
   })
   .strict()
 

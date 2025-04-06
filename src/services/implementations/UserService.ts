@@ -27,15 +27,24 @@ export class UserService implements IUserService {
 
     const hashedPassword = await this.passwordService.hash(userData.password!)
 
+    // Ensure hiringDate is properly parsed
+    const hiringDate = userData.hiringDate
+      ? new Date(userData.hiringDate)
+      : new Date()
+    const currentYear = new Date().getFullYear()
+    const hireYear = hiringDate.getFullYear()
+    const initialLeaveBalance = currentYear === hireYear ? 14 : 21
+
     const user = {
       ...userData,
       password: hashedPassword,
       role: userData.role || UserRole.USER,
-      annualLeaveBalance: userData.annualLeaveBalance || 21,
+      annualLeaveBalance: initialLeaveBalance,
       monthlyHourBalance: userData.monthlyHourBalance || 3,
+      hiringDate, // Use the parsed date
     } as User
 
-    this.userRepository.create(user)
+    await this.userRepository.create(user)
   }
 
   async register(userData: Partial<User>): Promise<void> {

@@ -20,6 +20,9 @@ export class UserController {
     const user = await this.userService.createUser({
       ...userData,
       role: UserRole.USER,
+      hiringDate: userData.hiringDate
+        ? new Date(userData.hiringDate)
+        : new Date(),
     })
     ApiResponseHandler.success(res, user, 'User created successfully', 201)
   })
