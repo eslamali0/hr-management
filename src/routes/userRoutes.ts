@@ -44,7 +44,7 @@ export const createUserRoutes = (container: Container) => {
   router.get(
     '/:userId/requests',
     isAuthenticated,
-    isUser,
+    isAdmin,
     validateUserId,
     validateUserRequests,
     userController.getUserRequests
