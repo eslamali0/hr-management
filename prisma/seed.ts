@@ -1,22 +1,22 @@
-// import { PrismaClient } from '@prisma/client'
-// import { Department } from '../src/types/department'
+import { PrismaClient } from '@prisma/client'
+import { Department } from '../src/types/department'
 
-// const prisma = new PrismaClient()
+const prisma = new PrismaClient()
 
-// async function main() {
-//   // Seed departments
-//   const departments = Object.values(Department).map((name) => ({ name }))
+async function main() {
+  // Seed departments
+  const departments = Object.values(Department).map((name) => ({ name }))
 
-//   await prisma.department.createMany({
-//     data: departments,
-//   })
-// }
+  await prisma.department.createMany({
+    data: departments,
+  })
+}
 
-// main()
-//   .catch((e) => {
-//     console.error(e)
-//     process.exit(1)
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect()
-//   })
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
