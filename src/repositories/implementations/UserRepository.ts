@@ -3,6 +3,7 @@ import prisma from '../../lib/prisma'
 import { Department, User } from '@prisma/client'
 import { IUserRepository } from '../interfaces/IUserRepository'
 import { UserRole } from '../../constants/userRoles'
+import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class UserRepository implements IUserRepository {
@@ -122,6 +123,80 @@ export class UserRepository implements IUserRepository {
       total,
       page,
       totalPages: Math.ceil(total / limit),
+    }
+  }
+
+  async findUserRequests(
+    id: number,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{
+    user: Pick<User, 'id' | 'name'> | null
+    requests: {
+      requestDate: Date
+      startDate?: Date
+      endDate?: Date
+      requestedDays?: number
+      date?: Date
+      requestedHours?: number
+      status: string
+    }[]
+    page: number
+    totalPages: number
+  }> {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+      },
+    })
+
+    const [leaveCount, hourCount] = await Promise.all([
+      prisma.leaveRequest.count({
+        where: { userId: id, status: RequestStatus.APPROVED },
+      }),
+      prisma.hourRequest.count({
+        where: { userId: id, status: RequestStatus.APPROVED },
+      }),
+    ])
+
+    const totalItems = leaveCount + hourCount
+    const totalPages = Math.ceil(totalItems / limit)
+
+    const requests = await prisma.$queryRaw`
+      SELECT 
+        createdAt as requestDate,
+        startDate,
+        endDate,
+        requestedDays,
+        NULL as date,
+        NULL as requestedHours
+      FROM LeaveRequest
+      WHERE status = ${RequestStatus.APPROVED} AND userId = ${id}
+      
+      UNION ALL
+      
+      SELECT 
+        createdAt as requestDate,
+        NULL as startDate,
+        NULL as endDate,
+        NULL as requestedDays,
+        date,
+        requestedHours
+      FROM HourRequest
+      WHERE status = ${RequestStatus.APPROVED} AND userId = ${id}
+      
+      ORDER BY requestDate DESC
+      OFFSET ${(page - 1) * limit} ROWS
+      FETCH NEXT ${limit} ROWS ONLY
+    `
+
+    return {
+      user,
+      requests: requests as any[],
+      page,
+      totalPages,
     }
   }
 

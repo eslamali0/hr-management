@@ -51,7 +51,7 @@ const updateBalanceSchema = z.object({
         .positive({ message: 'Balance amount must be a positive number' }),
     })
     .strict(),
-  query: z.object({}).strict(),
+  query: z.object({}).optional().default({}),
 })
 
 // User ID validation schema
@@ -78,6 +78,22 @@ const userQuerySchema = z.object({
     .transform((val) => (val ? JSON.parse(val) : undefined)),
 })
 
+// User requests validation schema
+const userRequestsSchema = z.object({
+  params: z
+    .object({
+      userId: numericIdSchema,
+    })
+    .strict(),
+  query: z
+    .object({
+      page: z.coerce.number().int().positive().default(1),
+      limit: z.coerce.number().int().positive().max(100).default(10),
+    })
+    .strict(),
+  body: z.object({}).optional().default({}),
+})
+
 // Export validators
 export const validateCreateUser = validateZodRequest(createUserSchema, 'body')
 export const validateUpdateBalance =
@@ -85,3 +101,4 @@ export const validateUpdateBalance =
 export const validateUserId = validateZodRequest(userIdParamsSchema, 'params')
 export const validateUserQuery = validateZodRequest(userQuerySchema, 'query')
 export const validateEmail = validateZodRequest(emailParamsSchema, 'params')
+export const validateUserRequests = validateCombinedRequest(userRequestsSchema)

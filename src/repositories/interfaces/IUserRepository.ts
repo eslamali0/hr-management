@@ -21,6 +21,24 @@ export interface IUserRepository {
     page: number
     totalPages: number
   }>
+  findUserRequests(
+    id: number,
+    page: number,
+    limit: number
+  ): Promise<{
+    user: Pick<User, 'id' | 'name'> | null
+    requests: {
+      requestDate: Date
+      startDate?: Date
+      endDate?: Date
+      requestedDays?: number
+      date?: Date
+      requestedHours?: number
+      status: string
+    }[]
+    page: number
+    totalPages: number
+  }>
   departmentExists(id: number): Promise<boolean>
   getDepartments(): Promise<Department[]>
 }

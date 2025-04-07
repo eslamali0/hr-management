@@ -8,6 +8,24 @@ export interface IUserService {
   updateHourBalance(userId: number, hours: number): Promise<void>
   updatePassword(userId: number, newPassword: string): Promise<void>
   findById(userId: number): Promise<User | null>
+  userRequests(
+    userId: number,
+    page: number,
+    limit: number
+  ): Promise<{
+    user: Pick<User, 'id' | 'name'> | null
+    requests: {
+      requestDate: Date
+      startDate?: Date
+      endDate?: Date
+      requestedDays?: number
+      date?: Date
+      requestedHours?: number
+      status: string
+    }[]
+    page: number
+    totalPages: number
+  }>
   updateProfile(
     userId: number,
     data: {

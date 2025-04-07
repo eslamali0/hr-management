@@ -7,6 +7,7 @@ import {
   validateEmail,
   validateUserId,
   validateUserQuery,
+  validateUserRequests,
 } from '../middleware/validation/userValidation'
 import { isAuthenticated, isAdmin, isUser } from '../middleware/auth'
 import { upload } from '../middleware/multerMiddleware'
@@ -39,6 +40,16 @@ export const createUserRoutes = (container: Container) => {
     validateUserId,
     userController.findById
   )
+
+  router.get(
+    '/:userId/requests',
+    isAuthenticated,
+    isUser,
+    validateUserId,
+    validateUserRequests,
+    userController.getUserRequests
+  )
+
   router.get(
     '/email/:email',
     isAuthenticated,

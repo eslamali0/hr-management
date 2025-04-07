@@ -43,6 +43,30 @@ export class UserController {
     ApiResponseHandler.success(res, user, 'User found successfully')
   })
 
+  getUserRequests = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = res.locals.validatedData.params
+    const { page, limit } = res.locals.validatedData.query
+
+    const userRequests = await this.userService.userRequests(
+      userId,
+      page,
+      limit
+    )
+
+    ApiResponseHandler.success(
+      res,
+      {
+        user: userRequests.user,
+        requests: userRequests.requests,
+        pagination: {
+          page: userRequests.page,
+          totalPages: userRequests.totalPages,
+        },
+      },
+      'User requests retrieved successfully'
+    )
+  })
+
   updateLeaveBalance = asyncHandler(async (req: Request, res: Response) => {
     const { userId } = res.locals.validatedData.params
     const { amount } = res.locals.validatedData.body

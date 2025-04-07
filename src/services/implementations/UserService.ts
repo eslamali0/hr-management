@@ -88,6 +88,38 @@ export class UserService implements IUserService {
     return user
   }
 
+  async userRequests(
+    userId: number,
+    page: number,
+    limit: number
+  ): Promise<{
+    user: Pick<User, 'id' | 'name'> | null
+    requests: {
+      requestDate: Date
+      startDate?: Date
+      endDate?: Date
+      requestedDays?: number
+      date?: Date
+      requestedHours?: number
+      status: string
+    }[]
+    page: number
+    totalPages: number
+  }> {
+    const userExists = await this.userRepository.findById(userId)
+    if (!userExists) {
+      throw new NotFoundError('User not found')
+    }
+
+    const userRequestsData = await this.userRepository.findUserRequests(
+      userId,
+      page,
+      limit
+    )
+
+    return userRequestsData
+  }
+
   async updateProfile(
     userId: number,
     data: {
