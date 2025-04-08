@@ -82,6 +82,7 @@ const updateLeaveRequestSchema = z
           path: ['endDate'],
         }
       ),
+    query: z.unknown().optional(),
   })
   .strict()
 
