@@ -41,7 +41,7 @@ export class UserService implements IUserService {
       role: userData.role || UserRole.USER,
       annualLeaveBalance: initialLeaveBalance,
       monthlyHourBalance: userData.monthlyHourBalance || 3,
-      hiringDate, // Use the parsed date
+      hiringDate,
     } as User
 
     await this.userRepository.create(user)
@@ -142,15 +142,19 @@ export class UserService implements IUserService {
       }
     }
 
-    const imageUrl = await this.imagesService.uploadImage(data.profileImage!)
+    let imageUrl: string | undefined
 
-    if (user.profileImageUrl) {
-      const publicId = this.imagesService.getPublicIdFromUrl(
-        user.profileImageUrl
-      )
+    if (data.profileImage) {
+      imageUrl = await this.imagesService.uploadImage(data.profileImage)
 
-      if (publicId) {
-        await this.imagesService.deleteImage(publicId)
+      // Delete old image if it exists
+      if (user.profileImageUrl) {
+        const publicId = this.imagesService.getPublicIdFromUrl(
+          user.profileImageUrl
+        )
+        if (publicId) {
+          await this.imagesService.deleteImage(publicId)
+        }
       }
     }
 
@@ -158,7 +162,7 @@ export class UserService implements IUserService {
     const allowedUpdates = {
       name: data.name,
       departmentId: data.departmentId,
-      profileImageUrl: imageUrl,
+      ...(imageUrl && { profileImageUrl: imageUrl }),
     }
 
     const userUpdated = await this.userRepository.update(userId, allowedUpdates)
