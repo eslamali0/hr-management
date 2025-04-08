@@ -89,6 +89,7 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
           requestedDays: true,
           reason: true,
         },
+        orderBy: { createdAt: 'desc' },
       })
     } catch (error) {
       throw error
