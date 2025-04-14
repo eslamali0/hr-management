@@ -11,6 +11,7 @@ export const TYPES = {
   LeaveRequestController: Symbol.for('LeaveRequestController'),
   HourRequestController: Symbol.for('HourRequestController'),
   AttendanceController: Symbol.for('AttendanceController'),
+  PasswordController: Symbol.for('PasswordController'),
   AttendanceService: Symbol.for('AttendanceService'),
   PasswordService: Symbol.for('PasswordService'),
   StatsService: Symbol.for('StatsService'),
@@ -24,4 +25,6 @@ export const TYPES = {
   HourlyLeaveProcessor: Symbol.for('HourlyLeaveProcessor'),
   DefaultAttendanceProcessor: Symbol.for('DefaultAttendanceProcessor'),
   PendingRequestProcessor: Symbol.for('PendingRequestProcessor'),
+  EmailService: Symbol.for('EmailService'),
+  TokenService: Symbol.for('TokenService'),
 }

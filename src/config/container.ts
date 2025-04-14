@@ -18,7 +18,7 @@ import { IHourRequestService } from '../services/interfaces/IHourRequestService'
 import { IUserRepository } from '../repositories/interfaces/IUserRepository'
 import { ILeaveRequestRepository } from '../repositories/interfaces/ILeaveRequestRepository'
 import { IHourRequestRepository } from '../repositories/interfaces/IHourRequestRepository'
-import { BcryptPasswordService } from '../services/implementations/BcryptPasswordService'
+import { PasswordService } from '../services/implementations/PasswordService'
 import { IPasswordService } from '../services/interfaces/IPasswordService'
 import { StatsController } from '../controllers/StatsController'
 import { StatsService } from '../services/implementations/StatsService'
@@ -40,6 +40,11 @@ import { HourlyLeaveProcessor } from '../services/implementations/processors/Hou
 import { DefaultAttendanceProcessor } from '../services/implementations/processors/DefaultAttendanceProcessor'
 import { PendingRequestProcessor } from '../services/implementations/processors/PendingRequestProcessor'
 import { AttendanceController } from '../controllers/AttendanceController'
+import { IEmailService } from '../services/interfaces/IEmail.Service'
+import { EmailService } from '../services/implementations/EmailService'
+import { ITokenService } from '../services/interfaces/ITokenService'
+import { TokenService } from '../services/implementations/TokenService'
+import { PasswordController } from '../controllers/PasswordController'
 
 export const setupContainer = () => {
   const container = new Container()
@@ -71,11 +76,12 @@ export const setupContainer = () => {
     .bind<HourRequestController>(TYPES.HourRequestController)
     .to(HourRequestController)
   container.bind(TYPES.AttendanceController).to(AttendanceController)
+  container
+    .bind<PasswordController>(TYPES.PasswordController)
+    .to(PasswordController)
 
   // Register password service
-  container
-    .bind<IPasswordService>(TYPES.PasswordService)
-    .to(BcryptPasswordService)
+  container.bind<IPasswordService>(TYPES.PasswordService).to(PasswordService)
 
   // Register Stats Service and Controller
   container.bind<IStatsService>(TYPES.StatsService).to(StatsService)
@@ -120,6 +126,10 @@ export const setupContainer = () => {
   container
     .bind<PendingRequestProcessor>(TYPES.PendingRequestProcessor)
     .to(PendingRequestProcessor)
+
+  container.bind<IEmailService>(TYPES.EmailService).to(EmailService)
+  container.bind<ITokenService>(TYPES.TokenService).to(TokenService)
+
   return container
 }
 
