@@ -19,17 +19,10 @@ const hiringDateSchema = z
     return !(month === 1 && day === 29 && !isLeapYear(date.getFullYear()))
   }, 'Invalid hiring date (February 29 on non-leap year)')
 
-const initialLeaveBalanceSchema = z.coerce
-  .number()
-  .int('Initial leave balance must be an integer')
-  .positive('Initial leave balance must be a positive number')
 // User creation schema
 const createUserSchema = z
   .object({
     email: z.string().email({ message: 'Invalid email format' }),
-    password: z
-      .string()
-      .min(6, { message: 'Password must be at least 6 characters long' }),
     name: z.string().min(1, { message: 'Name is required' }),
     role: z.nativeEnum(UserRole).optional(),
     departmentId: numericIdSchema.optional(),
@@ -60,8 +53,12 @@ const userIdParamsSchema = z.object({
 })
 
 // Email validation schema
-const emailParamsSchema = z.object({
-  email: z.string().email({ message: 'Invalid email format' }),
+const emailSchema = z.object({
+  email: z
+    .string()
+    .email({ message: 'Please provide a valid email address' })
+    .trim()
+    .toLowerCase(),
 })
 
 // User query params schema
@@ -94,11 +91,39 @@ const userRequestsSchema = z.object({
   body: z.object({}).optional().default({}),
 })
 
+const setupPasswordSchema = z
+  .object({
+    token: z.string({
+      required_error: 'Token is required',
+    }),
+    password: z
+      .string({
+        required_error: 'Password is required',
+      })
+      .min(8, 'Password must be at least 8 characters')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+      ),
+    confirmPassword: z.string({
+      required_error: 'Confirm password is required',
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  })
+
 // Export validators
 export const validateCreateUser = validateZodRequest(createUserSchema, 'body')
 export const validateUpdateBalance =
   validateCombinedRequest(updateBalanceSchema)
 export const validateUserId = validateZodRequest(userIdParamsSchema, 'params')
 export const validateUserQuery = validateZodRequest(userQuerySchema, 'query')
-export const validateEmail = validateZodRequest(emailParamsSchema, 'params')
+export const validateEmail = validateZodRequest(emailSchema, 'params')
 export const validateUserRequests = validateCombinedRequest(userRequestsSchema)
+export const validateSetupPassword = validateZodRequest(
+  setupPasswordSchema,
+  'body'
+)
+export const validateForgotPassword = validateZodRequest(emailSchema, 'body')

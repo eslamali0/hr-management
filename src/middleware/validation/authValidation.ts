@@ -79,7 +79,7 @@ const updateProfileSchema = z.object({
       userId: z.coerce
         .number()
         .int('User ID must be a number')
-        .positive('User ID must be positive '),
+        .positive('User ID must be positive'),
     })
     .strict(),
   body: z
