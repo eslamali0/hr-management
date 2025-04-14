@@ -2,7 +2,7 @@ import { Department } from '@prisma/client'
 import { User } from '../../types'
 
 export interface IUserRepository {
-  create(user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<void>
+  create(user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User>
   update(id: number, data: Partial<User>): Promise<Partial<User>>
   delete(id: number): Promise<void>
   findById(id: number): Promise<User | null>

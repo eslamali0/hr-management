@@ -7,6 +7,8 @@ import { TYPES } from '../../config/types'
 import { Department, User } from '@prisma/client'
 import { IImageService } from '../interfaces/IImageService'
 import { UserRole } from '../../constants/userRoles'
+import { IEmailService } from '../interfaces/IEmail.Service'
+import { ITokenService } from '../interfaces/ITokenService'
 
 @injectable()
 export class UserService implements IUserService {
@@ -16,7 +18,11 @@ export class UserService implements IUserService {
     @inject(TYPES.ImageService)
     private readonly imagesService: IImageService,
     @inject(TYPES.PasswordService)
-    private readonly passwordService: IPasswordService
+    private readonly passwordService: IPasswordService,
+    @inject(TYPES.EmailService)
+    private readonly emailService: IEmailService,
+    @inject(TYPES.TokenService)
+    private readonly tokenService: ITokenService
   ) {}
 
   async createUser(userData: Partial<User>): Promise<void> {
@@ -25,7 +31,8 @@ export class UserService implements IUserService {
       throw new ValidationError('Email already exists')
     }
 
-    const hashedPassword = await this.passwordService.hash(userData.password!)
+    const tempPassword = Math.random().toString(36).slice(-10)
+    const hashedPassword = await this.passwordService.hash(tempPassword)
 
     // Ensure hiringDate is properly parsed
     const hiringDate = userData.hiringDate
@@ -44,7 +51,13 @@ export class UserService implements IUserService {
       hiringDate,
     } as User
 
-    await this.userRepository.create(user)
+    const createdUser = await this.userRepository.create(user)
+
+    const token = await this.tokenService.generatePasswordSetupToken(
+      createdUser.id
+    )
+
+    await this.emailService.sendPasswordSetupEmail(createdUser, token)
   }
 
   async register(userData: Partial<User>): Promise<void> {

@@ -7,8 +7,8 @@ import { RequestStatus } from '../../constants/requestStatus'
 
 @injectable()
 export class UserRepository implements IUserRepository {
-  async create(user: User): Promise<void> {
-    await prisma.user.create({
+  async create(user: User): Promise<User> {
+    return await prisma.user.create({
       data: {
         ...user,
       },
