@@ -18,7 +18,7 @@ services:
       - hr_management_network
 
   mssql:
-    image: mcr.microsoft.com/azure-sql-edge:latest
+    image: mcr.microsoft.com/mssql/server:latest
     container_name: hr_management_mssql
     env_file:
       - .env
