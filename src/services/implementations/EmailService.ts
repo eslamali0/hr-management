@@ -10,17 +10,22 @@ export class EmailService implements IEmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT),
+      port: Number(process.env.EMAIL_PORT || '465'),
       secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        minVersion: 'TLSv1.2',
+      },
+      logger: true,
+      debug: true,
     })
   }
 
   async sendPasswordSetupEmail(user: User, token: string): Promise<void> {
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    const baseUrl = process.env.FRONTEND_URL
     const resetLink = `${baseUrl}/forget-password?token=${token}`
 
     const html = `

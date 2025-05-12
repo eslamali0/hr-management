@@ -6,7 +6,7 @@ import { inject, injectable } from 'inversify'
 import { Request, Response } from 'express'
 import { ApiResponseHandler } from '../utils/apiResponse'
 import { asyncHandler } from '../utils/errorHandler'
-import { IEmailService } from '@/services/interfaces/IEmail.Service'
+import { IEmailService } from '../services/interfaces/IEmail.Service'
 
 @injectable()
 export class PasswordController {
