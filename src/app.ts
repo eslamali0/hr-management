@@ -27,6 +27,9 @@ export const initializeApp = async () => {
   // Setup routes with container
   app.use('/api', createRoutes(container))
 
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' })
+  })
   // Error handling
   app.use(errorHandler)
 
