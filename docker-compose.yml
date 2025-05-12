@@ -10,9 +10,9 @@ services:
       - mssql
     restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
     networks:
       - hr_management_network
 
@@ -24,8 +24,8 @@ services:
     ports:
       - '${DB_PORT}:1433'
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD}
+      ACCEPT_EULA: 'Y'
+      SA_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mssql-data:/var/opt/mssql
     restart: unless-stopped
