@@ -1,22 +1,34 @@
-FROM node:20-alpine as builder
-
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
+
 COPY package*.json ./
-COPY prisma ./prisma/
+COPY bun.lock ./
 COPY tsconfig.json ./
+
+RUN bun install
+
+COPY prisma ./prisma/
+
+RUN bunx prisma generate
+
 COPY src ./src/
-COPY . .
 
-RUN npm install
-RUN npx prisma generate
-RUN npm run build
+RUN bun run build
 
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 WORKDIR /app
+
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/bun.lock ./
+
+RUN bun install --production
+
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
 COPY --from=builder /app/prisma ./prisma
+
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
-CMD ["npm", "start"]
+
+CMD ["bun", "start"]

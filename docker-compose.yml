@@ -1,12 +1,11 @@
-version: '3.8'
-
 services:
   app:
     build: .
+    container_name: hr_management_app
     env_file:
       - .env
     ports:
-      - '${PORT}:3001' # Matches .env PORT=3001
+      - '${PORT}:3001'
     depends_on:
       - mssql
     restart: unless-stopped
@@ -14,20 +13,29 @@ services:
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - hr_management_network
 
   mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: hr_management_mssql
     env_file:
       - .env
     ports:
-      - '${DB_PORT}:1433' # Maps external 1435 to internal 1433
+      - '${DB_PORT}:1433'
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD} # Reference DB_PASSWORD from .env
-      - MSSQL_PID=Developer
+      - SA_PASSWORD=${DB_PASSWORD}
     volumes:
       - mssql-data:/var/opt/mssql
     restart: unless-stopped
+    networks:
+      - hr_management_network
 
 volumes:
   mssql-data:
+    name: hr_management_mssql_data
+
+networks:
+  hr_management_network:
+    driver: bridge
