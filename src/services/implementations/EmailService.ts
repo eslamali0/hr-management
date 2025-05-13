@@ -10,13 +10,15 @@ export class EmailService implements IEmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT || '465'),
-      secure: true,
+      port: Number(process.env.EMAIL_PORT || '587'),
+      secure: false,
+      requireTLS: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
       tls: {
+        rejectUnauthorized: true,
         minVersion: 'TLSv1.2',
       },
       logger: true,
@@ -45,8 +47,8 @@ export class EmailService implements IEmailService {
   }
 
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: process.env.EMAIL_FROM,
       to,
       subject,
       html,
