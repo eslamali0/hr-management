@@ -127,9 +127,26 @@ export class UserController {
 
   updateUser = asyncHandler(async (req: Request, res: Response) => {
     const userId = parseInt(req.params.id)
-    const profileImage = req.file as Express.Multer.File
+    const { name } = req.body
+    const profileImage = req.file as Express.Multer.File | undefined
 
-    const user = await this.userService.updateProfileImage(userId, profileImage)
+    const updateData: {
+      name?: string
+      profileImage?: Express.Multer.File
+    } = {}
+
+    if (name !== undefined) {
+      updateData.name = name
+    }
+    if (profileImage) {
+      updateData.profileImage = profileImage
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      ApiResponseHandler.badRequest(res, 'No data to update')
+    }
+
+    const user = await this.userService.updateProfile(userId, updateData)
 
     ApiResponseHandler.success(res, user, 'User updated successfully')
   })
