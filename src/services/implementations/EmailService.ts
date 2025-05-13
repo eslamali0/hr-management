@@ -46,10 +46,13 @@ export class EmailService implements IEmailService {
 
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_USER,
       to,
       subject,
       html,
+      headers: {
+        'X-Priority': '1',
+      },
     }
 
     try {
