@@ -27,4 +27,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 
 EXPOSE 3001
 
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]
