@@ -48,7 +48,10 @@ export class EmailService implements IEmailService {
 
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
     const mailOptions: nodemailer.SendMailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: {
+        name: 'HR Management System',
+        address: process.env.EMAIL_FROM || '',
+      },
       to,
       subject,
       html,
