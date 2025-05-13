@@ -29,7 +29,14 @@ export class AuthService implements IAuthService {
     token: string
     user: Pick<
       User,
-      'id' | 'name' | 'email' | 'role' | 'departmentId' | 'profileImageUrl'
+      | 'id'
+      | 'name'
+      | 'email'
+      | 'role'
+      | 'monthlyHourBalance'
+      | 'annualLeaveBalance'
+      | 'departmentId'
+      | 'profileImageUrl'
     >
   }> {
     const user = await this.userService.findUserByEmail(email)
@@ -54,6 +61,8 @@ export class AuthService implements IAuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        monthlyHourBalance: user.monthlyHourBalance,
+        annualLeaveBalance: user.annualLeaveBalance,
         departmentId: user.departmentId,
         profileImageUrl: user.profileImageUrl,
       },
