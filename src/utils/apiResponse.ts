@@ -1,67 +1,89 @@
-import { Response } from "express";
+import { Response } from 'express'
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-  error?: any;
-  statusCode: number;
+export interface SuccessApiResponse<T> {
+  success: true
+  message: string
+  data: T
+  statusCode: number
+}
+
+export interface ErrorDetail {
+  field: string
+  message: string
+  code: string
+}
+
+export interface ErrorApiResponse {
+  success: false
+  message: string
+  statusCode: number
+  errors?: ErrorDetail[]
+  stack?: string
 }
 
 export class ApiResponseHandler {
   static success<T>(
     res: Response,
     data: T,
-    message: string = "Success",
-    statusCode: number = 200,
+    message: string = 'Success',
+    statusCode: number = 200
   ): Response {
-    const response: ApiResponse<T> = {
+    const response: SuccessApiResponse<T> = {
       success: true,
       message,
       data,
       statusCode,
-    };
-    return res.status(statusCode).json(response);
+    }
+    return res.status(statusCode).json(response)
   }
 
   static error(
     res: Response,
-    message: string = "Internal Server Error",
+    message: string = 'Internal Server Error',
     statusCode: number = 500,
-    error?: any,
+    errors?: ErrorDetail[],
+    stack?: string
   ): Response {
-    const response: ApiResponse<null> = {
+    const responsePayload: ErrorApiResponse = {
       success: false,
       message,
-      error,
       statusCode,
-    };
-    return res.status(statusCode).json(response);
+    }
+
+    if (errors && errors.length > 0) {
+      responsePayload.errors = errors
+    }
+
+    if (process.env.NODE_ENV === 'development' && stack) {
+      responsePayload.stack = stack
+    }
+
+    return res.status(statusCode).json(responsePayload)
   }
 
   static notFound(
     res: Response,
-    message: string = "Resource not found",
+    message: string = 'Resource not found'
   ): Response {
-    return this.error(res, message, 404);
+    return this.error(res, message, 404)
   }
 
   static badRequest(
     res: Response,
-    message: string = "Bad request",
-    error?: any,
+    message: string = 'Bad request',
+    details?: ErrorDetail[]
   ): Response {
-    return this.error(res, message, 400, error);
+    return this.error(res, message, 400, details)
   }
 
   static unauthorized(
     res: Response,
-    message: string = "Unauthorized",
+    message: string = 'Unauthorized'
   ): Response {
-    return this.error(res, message, 401);
+    return this.error(res, message, 401)
   }
 
-  static forbidden(res: Response, message: string = "Forbidden"): Response {
-    return this.error(res, message, 403);
+  static forbidden(res: Response, message: string = 'Forbidden'): Response {
+    return this.error(res, message, 403)
   }
 }

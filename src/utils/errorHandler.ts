@@ -1,25 +1,54 @@
 import { Request, Response, NextFunction } from 'express'
-import { AppError } from './errors'
+import {
+  AppError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ValidationError,
+} from './errors'
 import logger from '../config/logger'
 import { ApiResponseHandler } from './apiResponse'
 
 export const errorHandler = (
-  err: Error,
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  logger.error('Error:', {
-    error: {
-      name: err.name,
-      message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-      path: req.path,
-      method: req.method,
-    },
+  logger.error('Error caught in errorHandler:', {
+    name: err.name,
+    message: err.message,
+    statusCode: err.statusCode,
+    details: err.details,
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    stack:
+      process.env.NODE_ENV === 'development'
+        ? err.stack
+        : 'omitted in production',
   })
 
-  // Handle known errors
+  if (err instanceof ValidationError) {
+    ApiResponseHandler.error(res, err.message, err.statusCode, err.details)
+    return
+  }
+
+  if (err instanceof AuthenticationError) {
+    ApiResponseHandler.error(res, err.message, err.statusCode)
+    return
+  }
+
+  if (err instanceof AuthorizationError) {
+    ApiResponseHandler.error(res, err.message, err.statusCode)
+    return
+  }
+
+  if (err instanceof NotFoundError) {
+    ApiResponseHandler.error(res, err.message, err.statusCode)
+    return
+  }
+
   if (err instanceof AppError) {
     ApiResponseHandler.error(res, err.message, err.statusCode)
     return
@@ -31,47 +60,44 @@ export const errorHandler = (
     return
   }
 
-  // Handle validation errors from express-validator
-  if (err.name === 'ValidationError') {
-    ApiResponseHandler.error(res, err.message, 400)
-    return
-  }
-
-  // Handle Prisma errors
   if (err.name === 'PrismaClientKnownRequestError') {
-    // @ts-ignore - Prisma error has code property
-    const code = err.code
-    if (code === 'P2002') {
+    if (err.code === 'P2002') {
+      const target = (err.meta?.target as string[])?.join(', ') || 'field'
       ApiResponseHandler.error(
         res,
-        'A record with this data already exists',
+        `The provided ${target} is already in use.`,
         409
       )
       return
     }
-    if (code === 'P2025') {
-      ApiResponseHandler.error(res, 'Record not found', 404)
-      return
-    }
-    if (code === 'P2003') {
-      ApiResponseHandler.error(res, 'Foreign key constraint failed', 400)
-      return
-    }
-  }
-
-  if (err.name === 'PrismaClientValidationError') {
-    ApiResponseHandler.error(res, 'Invalid data provided', 400)
+    ApiResponseHandler.error(res, 'Database request error.', 500)
     return
   }
 
-  // Handle unknown errors
+  if (err.name === 'PrismaClientValidationError') {
+    const message =
+      process.env.NODE_ENV === 'production'
+        ? 'Invalid data provided for database operation.'
+        : `Prisma validation error: ${err.message}`
+    ApiResponseHandler.error(res, message, 400)
+    return
+  }
+
+  // Fallback for unhandled errors
+  const defaultErrorMessage =
+    process.env.NODE_ENV === 'production'
+      ? 'An unexpected internal server error occurred.'
+      : `Unhandled error: ${err.message}`
+
+  const stackTrace =
+    process.env.NODE_ENV === 'development' ? err.stack : undefined
+
   ApiResponseHandler.error(
     res,
-    process.env.NODE_ENV === 'production'
-      ? 'Something went wrong!'
-      : err.message,
+    defaultErrorMessage,
     500,
-    process.env.NODE_ENV === 'development' ? err.stack : undefined
+    undefined, // No specific 'details' for unknown errors
+    stackTrace
   )
 }
 
