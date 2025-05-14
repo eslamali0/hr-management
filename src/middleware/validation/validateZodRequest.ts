@@ -12,7 +12,6 @@ export const validateZodRequest = <T extends ZodType<any, any, any>>(
     const result = schema.safeParse(req[source])
 
     if (!result.success) {
-      // Format validation errors consistently
       const errors = result.error.issues.map((issue) => ({
         field: issue.path.join('.'),
         message: issue.message,
