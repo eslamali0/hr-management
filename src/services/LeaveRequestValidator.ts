@@ -1,9 +1,9 @@
-import { DateCalculator } from '../utils/DateCalculator'
 import { ILeaveRequestRepository } from '../repositories/interfaces/ILeaveRequestRepository'
 import { ValidationError } from '../utils/errors'
 import { inject, injectable } from 'inversify'
 import { TYPES } from '../config/types'
 import { ILeaveRequestValidator } from './interfaces/ILeaveRequestValidator'
+import { LeaveDayType } from '../constants/leaveDayType'
 
 @injectable()
 export class LeaveRequestValidator implements ILeaveRequestValidator {
@@ -16,15 +16,15 @@ export class LeaveRequestValidator implements ILeaveRequestValidator {
     userId: number,
     startDate: Date,
     endDate: Date,
+    dayType: LeaveDayType,
     requestIdToExclude?: number
   ): Promise<void> {
-    DateCalculator.validateDateRange(startDate, endDate)
-
     const overlappingRequests =
       await this.leaveRequestRepository.findOverlappingRequests(
         userId,
         startDate,
-        endDate
+        endDate,
+        dayType
       )
 
     // For updates, exclude the current request from overlap check

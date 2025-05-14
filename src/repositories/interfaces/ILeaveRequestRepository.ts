@@ -1,3 +1,4 @@
+import { LeaveDayType } from '../../constants/leaveDayType'
 import { RequestStatus } from '../../constants/requestStatus'
 import { LeaveRequest } from '../../types'
 
@@ -10,9 +11,19 @@ export interface ILeaveRequestRepository {
       'id' | 'startDate' | 'endDate' | 'status' | 'requestedDays' | 'reason'
     >[]
   >
-  create(request: Omit<LeaveRequest, 'id'>): Promise<void>
+  create(
+    data: Omit<
+      LeaveRequest,
+      'id' | 'status' | 'createdAt' | 'updatedAt' | 'userId'
+    > & { userId: number; status: RequestStatus }
+  ): Promise<void>
   findById(id: number): Promise<LeaveRequest | null>
-  update(request: LeaveRequest): Promise<void>
+  update(
+    id: number,
+    data: Partial<
+      Omit<LeaveRequest, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+    >
+  ): Promise<void>
   delete(id: number): Promise<void>
   findByStatus(
     status:
@@ -29,9 +40,10 @@ export interface ILeaveRequestRepository {
   findOverlappingRequests(
     userId: number,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    dayType: LeaveDayType
   ): Promise<LeaveRequest[]>
-  approveLeaveRequestWithTransaction(
+  approveLeaveRequest(
     requestId: number,
     userId: number,
     newBalance: number

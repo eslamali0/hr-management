@@ -1,30 +1,29 @@
-import { ValidationError } from './errors'
+import { DateTime } from 'luxon'
 
 export class DateCalculator {
-  static calculateBusinessDays(startDate: Date, endDate: Date): number {
+  static calculateBusinessDays(startDate: DateTime, endDate: DateTime): number {
     let days = 0
-    const current = new Date(startDate)
-    const end = new Date(endDate)
+    let currentDate = startDate
 
-    while (current <= end) {
-      const dayOfWeek = current.getDay()
+    while (currentDate <= endDate) {
+      const dayOfWeek = currentDate.weekday
       if (dayOfWeek !== 5 && dayOfWeek !== 6) {
         days++
       }
-      current.setDate(current.getDate() + 1)
+      currentDate = currentDate.plus({ days: 1 })
     }
     return days
   }
 
-  static validateDateRange(startDate: Date, endDate: Date): void {
-    if (startDate > endDate) {
-      throw new ValidationError('Start date must be before end date')
+  static normalizeToUTCStartOfDay(dateInput: string | Date): DateTime {
+    let dt: DateTime
+
+    if (typeof dateInput === 'string') {
+      dt = DateTime.fromISO(dateInput)
+    } else {
+      dt = DateTime.fromJSDate(dateInput)
     }
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (startDate < today) {
-      throw new ValidationError('Cannot modify past leave requests')
-    }
+    return DateTime.utc(dt.year, dt.month, dt.day)
   }
 }

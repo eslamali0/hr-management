@@ -4,70 +4,57 @@ import { ILeaveRequestRepository } from '../interfaces/ILeaveRequestRepository'
 import { LeaveRequest, User } from '@prisma/client'
 import { NotFoundError } from '../../utils/errors'
 import { RequestStatus } from '../../constants/requestStatus'
+import { LeaveDayType } from '../../constants/leaveDayType'
 
 @injectable()
 export class LeaveRequestRepository implements ILeaveRequestRepository {
-  async create(request: Omit<LeaveRequest, 'id'>): Promise<void> {
+  async create(
+    data: Omit<
+      LeaveRequest,
+      'id' | 'status' | 'createdAt' | 'updatedAt' | 'userId'
+    > & { userId: number; status: RequestStatus }
+  ): Promise<void> {
     await prisma.leaveRequest.create({
-      data: request,
+      data,
     })
   }
 
-  async update(request: LeaveRequest): Promise<void> {
-    try {
-      const { startDate, endDate, requestedDays, status, reason } = request
-
-      await prisma.leaveRequest.update({
-        where: { id: request.id },
-        data: {
-          startDate,
-          endDate,
-          requestedDays,
-          status,
-          reason,
-        },
-        include: {
-          user: true,
-        },
-      })
-    } catch (error) {
-      throw error
-    }
+  async update(
+    id: number,
+    data: Partial<
+      Omit<LeaveRequest, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+    >
+  ): Promise<void> {
+    await prisma.leaveRequest.update({
+      where: { id },
+      data,
+      include: {
+        user: true,
+      },
+    })
   }
 
   async delete(id: number): Promise<void> {
-    try {
-      await prisma.leaveRequest.delete({ where: { id } })
-    } catch (error) {
-      throw error
-    }
+    await prisma.leaveRequest.delete({ where: { id } })
   }
 
   async findById(id: number): Promise<(LeaveRequest & { user: User }) | null> {
-    try {
-      const request = await prisma.leaveRequest.findUnique({
-        where: { id },
-        include: {
-          user: true,
-        },
-      })
-      if (!request) {
-        throw new NotFoundError('Leave request not found')
-      }
-      return request
-    } catch (error) {
-      throw error
+    const request = await prisma.leaveRequest.findUnique({
+      where: { id },
+      include: {
+        user: true,
+      },
+    })
+    if (!request) {
+      throw new NotFoundError('Leave request not found')
     }
+    return request
   }
 
   async findAll(): Promise<LeaveRequest[]> {
-    try {
-      return await prisma.leaveRequest.findMany({
-        include: { user: true },
-      })
-    } catch (error) {
-      throw error
-    }
+    return await prisma.leaveRequest.findMany({
+      include: { user: true },
+    })
   }
 
   async findByUserId(
@@ -78,22 +65,19 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
       'id' | 'startDate' | 'endDate' | 'status' | 'requestedDays' | 'reason'
     >[]
   > {
-    try {
-      return await prisma.leaveRequest.findMany({
-        where: { userId },
-        select: {
-          id: true,
-          startDate: true,
-          endDate: true,
-          status: true,
-          requestedDays: true,
-          reason: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      })
-    } catch (error) {
-      throw error
-    }
+    return await prisma.leaveRequest.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        requestedDays: true,
+        reason: true,
+        dayType: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
   }
 
   async findByStatus(
@@ -132,76 +116,83 @@ export class LeaveRequestRepository implements ILeaveRequestRepository {
   }
 
   async findPendingRequests(): Promise<(LeaveRequest & { user: User })[]> {
-    try {
-      return await prisma.leaveRequest.findMany({
-        where: { status: RequestStatus.PENDING },
-        include: {
-          user: true,
-        },
-      })
-    } catch (error) {
-      throw error
-    }
+    return await prisma.leaveRequest.findMany({
+      where: { status: RequestStatus.PENDING },
+      include: {
+        user: true,
+      },
+    })
   }
 
   async findOverlappingRequests(
     userId: number,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    dayType: LeaveDayType
   ): Promise<LeaveRequest[]> {
-    try {
-      return await prisma.leaveRequest.findMany({
-        where: {
-          userId,
-          AND: [
-            {
-              OR: [
-                // Case 1: New request starts during an existing request
-                {
-                  startDate: { lte: endDate },
-                  endDate: { gte: startDate },
-                },
-                // Case 2: New request contains an existing request
-                {
-                  startDate: { gte: startDate },
-                  endDate: { lte: endDate },
-                },
-              ],
-            },
-            {
-              status: {
-                in: [RequestStatus.PENDING, RequestStatus.APPROVED],
-              },
-            },
-          ],
-        },
-      })
-    } catch (error) {
-      throw error
+    const where = {
+      userId,
+      status: {
+        in: [RequestStatus.PENDING, RequestStatus.APPROVED],
+      },
     }
+
+    let overlapConditions: any[] = []
+
+    if (dayType === LeaveDayType.FULL_DAY) {
+      overlapConditions = [
+        {
+          dayType: LeaveDayType.FULL_DAY,
+          startDate: { lte: endDate },
+          endDate: { gte: startDate },
+        },
+        {
+          dayType: LeaveDayType.HALF_DAY,
+          startDate: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      ]
+    } else {
+      overlapConditions = [
+        {
+          dayType: LeaveDayType.FULL_DAY,
+          startDate: { lte: startDate },
+          endDate: { gte: startDate },
+        },
+        {
+          dayType: LeaveDayType.HALF_DAY,
+          startDate: startDate,
+        },
+      ]
+    }
+
+    return prisma.leaveRequest.findMany({
+      where: {
+        ...where,
+        OR: overlapConditions,
+      },
+    })
   }
 
-  async approveLeaveRequestWithTransaction(
+  async approveLeaveRequest(
     requestId: number,
     userId: number,
     newBalance: number
   ): Promise<void> {
-    try {
-      await prisma.$transaction(async (prismaClient) => {
-        await prismaClient.user.update({
-          where: { id: userId },
-          data: { annualLeaveBalance: newBalance },
-        })
-
-        // Update request status only
-        await prismaClient.leaveRequest.update({
-          where: { id: requestId },
-          data: { status: RequestStatus.APPROVED },
-        })
+    await prisma.$transaction(async (prismaClient) => {
+      await prismaClient.user.update({
+        where: { id: userId },
+        data: { annualLeaveBalance: newBalance },
       })
-    } catch (error) {
-      throw error
-    }
+
+      // Update request status only
+      await prismaClient.leaveRequest.update({
+        where: { id: requestId },
+        data: { status: RequestStatus.APPROVED },
+      })
+    })
   }
 
   async count(): Promise<number> {

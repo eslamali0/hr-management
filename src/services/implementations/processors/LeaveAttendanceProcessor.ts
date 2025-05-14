@@ -5,6 +5,7 @@ import { IAttendanceProcessor } from '../../interfaces/IAttendanceProcessor'
 import { IAttendanceRepository } from '../../../repositories/interfaces/IAttendanceRepository'
 import { RequestStatus } from '../../../constants/requestStatus'
 import { AttendanceStatus } from '../../../constants/attendanceStatus'
+import { LeaveDayType } from '../../../constants/leaveDayType'
 
 @injectable()
 export class LeaveAttendanceProcessor implements IAttendanceProcessor {
@@ -23,15 +24,25 @@ export class LeaveAttendanceProcessor implements IAttendanceProcessor {
         startDate: { lte: date },
         endDate: { gte: date },
       },
+      select: {
+        userId: true,
+        dayType: true,
+      },
     })
 
     // Process each user with an approved leave
     for (const request of leaveRequests) {
       if (!processedUserIds.has(request.userId)) {
+        let statusToSet = AttendanceStatus.ABSENT
+
+        if (request.dayType === LeaveDayType.HALF_DAY) {
+          statusToSet = AttendanceStatus.HALF_DAY
+        }
+
         await this.attendanceRepository.upsertAttendance(
           request.userId,
           date,
-          AttendanceStatus.Absent
+          statusToSet
         )
         processedUserIds.add(request.userId)
       }

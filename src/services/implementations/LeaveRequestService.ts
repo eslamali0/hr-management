@@ -13,6 +13,7 @@ import { LeaveRequest } from '@prisma/client'
 import { ILeaveRequestValidator } from '../interfaces/ILeaveRequestValidator'
 import { DateCalculator } from '../../utils/DateCalculator'
 import { RequestStatus } from '../../constants/requestStatus'
+import { LeaveDayType } from '../../constants/leaveDayType'
 
 @injectable()
 export class LeaveRequestService implements ILeaveRequestService {
@@ -26,77 +27,113 @@ export class LeaveRequestService implements ILeaveRequestService {
   ) {}
 
   // Common method for both submit and update operations
-  private async validateAndPrepareRequest(
+  private async validateAndPrepareRequestData(
     userId: number,
-    requestData: Partial<LeaveRequest>,
-    existingRequest?: LeaveRequest
-  ): Promise<LeaveRequest> {
+    requestData: {
+      startDate: string | Date
+      endDate: string | Date
+      reason?: string | null
+      dayType: LeaveDayType
+    },
+    existingRequestId?: number
+  ): Promise<
+    Omit<LeaveRequest, 'id' | 'userId' | 'status' | 'createdAt' | 'updatedAt'>
+  > {
     const user = await this.userRepository.findById(userId)
     if (!user) {
       throw new NotFoundError('User not found')
     }
 
-    // For updates, we use existing values if not provided in the update
-    const startDate = requestData.startDate
-      ? new Date(requestData.startDate)
-      : existingRequest?.startDate
-
-    const endDate = requestData.endDate
-      ? new Date(requestData.endDate)
-      : existingRequest?.endDate
-
-    if (!startDate || !endDate) {
-      throw new ValidationError('Start date and end date are required')
-    }
-
-    if (startDate > endDate) {
-      throw new ValidationError('Start date must be before end date')
-    }
-
-    // Validate dates (checks for overlaps)
-    await this.leaveRequestValidator.validateRequestDates(
-      userId,
-      startDate,
-      endDate
+    const normalizedStartDate = DateCalculator.normalizeToUTCStartOfDay(
+      requestData.startDate
+    )
+    const normalizedEndDate = DateCalculator.normalizeToUTCStartOfDay(
+      requestData.endDate
     )
 
-    // Calculate business days
-    const requestedDays = DateCalculator.calculateBusinessDays(
-      startDate,
-      endDate
-    )
+    // Allow today's date but prevent past dates
+    const today = DateCalculator.normalizeToUTCStartOfDay(new Date());
+    if (normalizedStartDate.valueOf() < today.valueOf()) {
+      throw new ValidationError('Start date cannot be in the past.');
+    }
 
-    // Validate leave balance
+    // Validate that for HALF_DAY, startDate and endDate are the same.
+    if (requestData.dayType === LeaveDayType.HALF_DAY) {
+      if (!normalizedStartDate.hasSame(normalizedEndDate, 'day')) {
+        throw new ValidationError(
+          'For half-day requests, start date and end date must be the same day.'
+        )
+      }
+    } else { // FULL_DAY
+      if (normalizedEndDate.valueOf() < normalizedStartDate.valueOf()) {
+        throw new ValidationError('End date must be on or after start date.')
+      }
+    }
+
+    let requestedDays: number
+    if (requestData.dayType === LeaveDayType.HALF_DAY) {
+      requestedDays = 0.5
+    } else {
+      requestedDays = DateCalculator.calculateBusinessDays(
+        normalizedStartDate,
+        normalizedEndDate
+      )
+    }
+
+    if (requestedDays <= 0) {
+      throw new ValidationError('Requested days must be greater than 0')
+    }
+
     this.leaveRequestValidator.validateLeaveBalance(
       requestedDays,
       user.annualLeaveBalance
     )
 
-    return {
-      ...(existingRequest || {}),
-      ...requestData,
-      startDate,
-      endDate,
-      requestedDays,
-      status: existingRequest ? existingRequest.status : RequestStatus.PENDING,
+    await this.leaveRequestValidator.validateRequestDates(
       userId,
-    } as LeaveRequest
+      normalizedStartDate.toJSDate(),
+      normalizedEndDate.toJSDate(),
+      requestData.dayType,
+      existingRequestId
+    )
+
+    return {
+      startDate: normalizedStartDate.toJSDate(),
+      endDate: normalizedEndDate.toJSDate(),
+      reason: requestData.reason ?? null,
+      requestedDays,
+      dayType: requestData.dayType,
+    }
   }
 
   async submitLeaveRequest(
     userId: number,
-    requestData: Partial<LeaveRequest>
+    data: {
+      startDate: string | Date
+      endDate: string | Date
+      reason?: string
+      dayType: LeaveDayType
+    }
   ): Promise<void> {
-    const request = await this.validateAndPrepareRequest(userId, requestData)
-    await this.leaveRequestRepository.create(request)
+    const request = await this.validateAndPrepareRequestData(userId, data)
+
+    await this.leaveRequestRepository.create({
+      ...request,
+      userId,
+      status: RequestStatus.PENDING,
+    })
   }
 
   async updateLeaveRequest(
     userId: number,
     requestId: number,
-    requestData: Partial<LeaveRequest>
+    data: {
+      startDate?: string | Date
+      endDate?: string | Date
+      reason?: string | null
+      dayType?: LeaveDayType
+    }
   ): Promise<void> {
-    // Find the existing request
     const existingRequest = await this.leaveRequestRepository.findById(
       requestId
     )
@@ -104,35 +141,46 @@ export class LeaveRequestService implements ILeaveRequestService {
     if (!existingRequest) {
       throw new NotFoundError('Leave request not found')
     }
-
     if (existingRequest.userId !== userId) {
       throw new ForbiddenError('You can only update your own requests')
     }
-
     if (existingRequest.status !== RequestStatus.PENDING) {
       throw new BadRequestError('Only pending requests can be updated')
     }
 
+    const validationData = {
+      startDate: data.startDate ?? existingRequest.startDate,
+      endDate: data.endDate ?? existingRequest.endDate,
+      reason: data.reason ?? existingRequest.reason,
+      dayType: data.dayType ?? (existingRequest.dayType as LeaveDayType),
+    }
+
     // Validate and prepare the updated request
-    const updatedRequest = await this.validateAndPrepareRequest(
+    const preparedData = await this.validateAndPrepareRequestData(
       userId,
-      requestData,
-      existingRequest
+      validationData,
+      requestId
     )
 
+    const updatePayload: Partial<LeaveRequest> = {
+      ...preparedData,
+    }
+
+    if (data.startDate) updatePayload.startDate = preparedData.startDate
+    if (data.endDate) updatePayload.endDate = preparedData.endDate
+    if (data.reason) updatePayload.reason = preparedData.reason
+    if (data.dayType) updatePayload.dayType = preparedData.dayType
+
     // Update the request
-    await this.leaveRequestRepository.update(updatedRequest)
+    await this.leaveRequestRepository.update(requestId, updatePayload)
   }
 
   async approveLeaveRequest(requestId: number): Promise<void> {
     const request = await this.leaveRequestRepository.findById(requestId)
-    if (!request) {
-      throw new NotFoundError('Leave request not found')
-    }
+    if (!request) throw new NotFoundError('Leave request not found')
 
-    if (request.status !== RequestStatus.PENDING) {
+    if (request.status !== RequestStatus.PENDING)
       throw new ValidationError('Request has already been processed')
-    }
 
     const user = await this.userRepository.findById(request.userId)
     if (!user) {
@@ -143,10 +191,10 @@ export class LeaveRequestService implements ILeaveRequestService {
       throw new ValidationError('Insufficient leave balance')
     }
 
-    const newBalance = user.annualLeaveBalance - (request.requestedDays || 0)
+    const newBalance = (user.annualLeaveBalance ?? 0) - request.requestedDays
 
     // Use transaction to ensure atomicity
-    await this.leaveRequestRepository.approveLeaveRequestWithTransaction(
+    await this.leaveRequestRepository.approveLeaveRequest(
       request.id,
       request.userId,
       newBalance
@@ -155,16 +203,14 @@ export class LeaveRequestService implements ILeaveRequestService {
 
   async rejectLeaveRequest(requestId: number): Promise<void> {
     const request = await this.leaveRequestRepository.findById(requestId)
-    if (!request) {
-      throw new NotFoundError('Leave request not found')
-    }
+    if (!request) throw new NotFoundError('Leave request not found')
 
-    if (request.status !== RequestStatus.PENDING) {
+    if (request.status !== RequestStatus.PENDING)
       throw new ValidationError('Request has already been processed')
-    }
 
-    request.status = RequestStatus.REJECTED
-    this.leaveRequestRepository.update(request)
+    this.leaveRequestRepository.update(requestId, {
+      status: RequestStatus.REJECTED,
+    } as Partial<LeaveRequest>)
   }
 
   async getPendingRequests(): Promise<
@@ -199,76 +245,14 @@ export class LeaveRequestService implements ILeaveRequestService {
     // First verify the request belongs to the user
     const request = await this.leaveRequestRepository.findById(requestId)
 
-    if (!request) {
-      throw new NotFoundError('Leave request not found')
-    }
+    if (!request) throw new NotFoundError('Leave request not found')
 
-    if (request.userId !== userId) {
+    if (request.userId !== userId)
       throw new ForbiddenError('You can only delete your own requests')
-    }
 
-    // Only allow deletion of pending requests
-    if (request.status !== RequestStatus.PENDING) {
+    if (request.status !== RequestStatus.PENDING)
       throw new BadRequestError('Only pending requests can be deleted')
-    }
 
     await this.leaveRequestRepository.delete(requestId)
-  }
-
-  async updateOwnLeaveRequest(
-    userId: number,
-    requestId: number,
-    data: any
-  ): Promise<any> {
-    const request = await this.leaveRequestRepository.findById(requestId)
-
-    if (!request) throw new NotFoundError('Leave request not found')
-    if (request.userId !== userId) throw new ForbiddenError('Not your request')
-    if (request.status !== RequestStatus.PENDING)
-      throw new BadRequestError('Only pending requests can be updated')
-
-    // Get updated dates or use existing ones
-    const startDate = data.startDate
-      ? new Date(data.startDate)
-      : new Date(request.startDate)
-    const endDate = data.endDate
-      ? new Date(data.endDate)
-      : new Date(request.endDate)
-
-    // Validate date logic
-    await this.leaveRequestValidator.validateRequestDates(
-      userId,
-      startDate,
-      endDate,
-      requestId // Pass the current request ID to exclude it from overlap check
-    )
-
-    // Calculate business days
-    const requestedDays = DateCalculator.calculateBusinessDays(
-      startDate,
-      endDate
-    )
-
-    // Get user balance
-    const user = await this.userRepository.findById(userId)
-    if (!user) throw new NotFoundError('User not found')
-
-    // Validate balance
-    this.leaveRequestValidator.validateLeaveBalance(
-      requestedDays,
-      user.annualLeaveBalance
-    )
-
-    // Prepare updated data
-    const updatedRequest = {
-      ...request,
-      ...data,
-      startDate,
-      endDate,
-      requestedDays,
-      id: requestId,
-    }
-
-    return this.leaveRequestRepository.update(updatedRequest)
   }
 }

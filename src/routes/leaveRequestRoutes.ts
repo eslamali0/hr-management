@@ -55,14 +55,14 @@ export const leaveRequestRouter = (container: Container) => {
   )
 
   router.put(
-    '/leave-requests/:requestId',
+    '/:requestId',
     isAuthenticated,
     validateUpdateLeaveRequest,
-    leaveRequestController.updateOwnLeaveRequest
+    leaveRequestController.updateLeaveRequest
   )
 
   router.delete(
-    '/leave-requests/:requestId',
+    '/:requestId',
     isAuthenticated,
     validateLeaveRequestId,
     leaveRequestController.deleteOwnLeaveRequest

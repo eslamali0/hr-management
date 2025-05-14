@@ -34,7 +34,7 @@ export class HourlyLeaveProcessor implements IAttendanceProcessor {
         await this.attendanceRepository.upsertAttendance(
           request.userId,
           date,
-          AttendanceStatus.Permission
+          AttendanceStatus.PERMISSION
         )
         processedUserIds.add(request.userId)
       }

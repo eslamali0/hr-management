@@ -72,12 +72,12 @@ export class LeaveRequestController {
     )
   })
 
-  updateOwnLeaveRequest = asyncHandler(async (req: Request, res: Response) => {
+  updateLeaveRequest = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.userId
     const { requestId } = res.locals.validatedData.params
     const updateData = res.locals.validatedData.body
 
-    const updatedRequest = await this.leaveRequestService.updateOwnLeaveRequest(
+    const updatedRequest = await this.leaveRequestService.updateLeaveRequest(
       userId,
       requestId,
       updateData

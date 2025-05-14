@@ -71,8 +71,7 @@ export class PendingRequestProcessor {
     // Reject each request
     for (const request of oldPendingLeaveRequests) {
       try {
-        await this.leaveRequestRepository.update({
-          ...request,
+        await this.leaveRequestRepository.update(request.id, {
           status: RequestStatus.REJECTED,
         })
         console.log(`Auto-rejected leave request ID: ${request.id}`)
