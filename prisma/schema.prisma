@@ -43,6 +43,7 @@ model LeaveRequest {
   requestedDays Float
   status        String   @default("Pending")
   reason        String?  @db.Text
+  dayType String @default("FULL_DAY")
   userId        Int
   user          User     @relation(fields: [userId], references: [id])
   createdAt     DateTime @default(now())
