@@ -10,6 +10,7 @@ import cron from 'node-cron'
 import { TYPES } from './config/types'
 import { IAttendanceService } from './services/interfaces/IAttendanceService'
 import { PendingRequestProcessor } from './services/implementations/processors/PendingRequestProcessor'
+import logger from './config/logger'
 
 dotenv.config()
 
@@ -36,15 +37,15 @@ export const initializeApp = async () => {
   // Set up cron job to run daily at 12:01 AM
   cron.schedule('1 0 * * *', async () => {
     try {
-      console.log('Running daily attendance processing...')
+      logger.info('Running daily attendance processing...')
       const attendanceService = container.get<IAttendanceService>(
         TYPES.AttendanceService
       )
-      console.log('Successfully retrieved attendance service')
+      logger.info('Successfully retrieved attendance service')
       await attendanceService.processDailyAttendance()
-      console.log('Daily attendance processing completed')
+      logger.info('Daily attendance processing completed')
     } catch (error) {
-      console.error('Error in attendance processing:', error)
+      logger.error('Error in attendance processing:', error)
     }
   })
 
@@ -52,14 +53,14 @@ export const initializeApp = async () => {
   // Set up cron job to auto-reject old pending requests every 12 hours
   cron.schedule('0 */12 * * *', async () => {
     try {
-      console.log('Running auto-rejection of old pending requests...')
+      logger.info('Running auto-rejection of old pending requests...')
       const pendingRequestProcessor = container.get<PendingRequestProcessor>(
         TYPES.PendingRequestProcessor
       )
       await pendingRequestProcessor.processPendingRequests()
-      console.log('Auto-rejection process completed')
+      logger.info('Auto-rejection process completed')
     } catch (error) {
-      console.error('Error in auto-rejection process:', error)
+      logger.error('Error in auto-rejection process:', error)
     }
   })
 

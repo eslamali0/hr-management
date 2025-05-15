@@ -4,6 +4,7 @@ import prisma from '../../../lib/prisma'
 import { RequestStatus } from '../../../constants/requestStatus'
 import { IHourRequestRepository } from '../../../repositories/interfaces/IHourRequestRepository'
 import { ILeaveRequestRepository } from '../../../repositories/interfaces/ILeaveRequestRepository'
+import logger from '../../../config/logger'
 
 @injectable()
 export class PendingRequestProcessor {
@@ -35,7 +36,7 @@ export class PendingRequestProcessor {
       },
     })
 
-    console.log(
+    logger.info(
       `Found ${oldPendingHourRequests.length} hour requests to auto-reject`
     )
 
@@ -43,9 +44,9 @@ export class PendingRequestProcessor {
     for (const request of oldPendingHourRequests) {
       try {
         await this.hourRequestRepository.rejectRequest(request.id)
-        console.log(`Auto-rejected hour request ID: ${request.id}`)
+        logger.info(`Auto-rejected hour request ID: ${request.id}`)
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to auto-reject hour request ID: ${request.id}`,
           error
         )
@@ -64,7 +65,7 @@ export class PendingRequestProcessor {
       },
     })
 
-    console.log(
+    logger.info(
       `Found ${oldPendingLeaveRequests.length} leave requests to auto-reject`
     )
 
@@ -74,9 +75,9 @@ export class PendingRequestProcessor {
         await this.leaveRequestRepository.update(request.id, {
           status: RequestStatus.REJECTED,
         })
-        console.log(`Auto-rejected leave request ID: ${request.id}`)
+        logger.info(`Auto-rejected leave request ID: ${request.id}`)
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to auto-reject leave request ID: ${request.id}`,
           error
         )

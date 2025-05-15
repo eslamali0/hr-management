@@ -33,7 +33,7 @@ export class LeaveAttendanceProcessor implements IAttendanceProcessor {
     // Process each user with an approved leave
     for (const request of leaveRequests) {
       if (!processedUserIds.has(request.userId)) {
-        let statusToSet = AttendanceStatus.ABSENT
+        let statusToSet = AttendanceStatus.ANNUAL_LEAVE
 
         if (request.dayType === LeaveDayType.HALF_DAY) {
           statusToSet = AttendanceStatus.HALF_DAY

@@ -4,6 +4,8 @@ import { Attendance } from '@prisma/client'
 import { TYPES } from '../../config/types'
 import { IAttendanceRepository } from '../../repositories/interfaces/IAttendanceRepository'
 import { IAttendanceProcessor } from '../interfaces/IAttendanceProcessor'
+import { DateTime } from 'luxon'
+import logger from '../../config/logger'
 
 @injectable()
 export class AttendanceService implements IAttendanceService {
@@ -26,18 +28,15 @@ export class AttendanceService implements IAttendanceService {
   }
 
   async processDailyAttendance(): Promise<void> {
-    const date = new Date()
-    const today = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-    )
+    const today = DateTime.now().toUTC().startOf('day').toJSDate()
 
     // Skip weekends (5 = Friday, 6 = Saturday in your system)
-    const dayOfWeek = today.getDay()
+    const dayOfWeek = today.getUTCDay()
     if (dayOfWeek === 5 || dayOfWeek === 6) {
-      return // No processing needed for weekends
+      return
     }
 
-    console.log('Processing attendance for:', today)
+    logger.log('Processing attendance for:', today)
 
     try {
       // Track which users have been processed
