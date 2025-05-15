@@ -35,7 +35,7 @@ export const initializeApp = async () => {
   app.use(errorHandler)
 
   // Set up cron job to run daily at 12:01 AM
-  cron.schedule('1 0 * * *', async () => {
+  cron.schedule('*/5 * * * *', async () => {
     try {
       logger.info('Running daily attendance processing...')
       const attendanceService = container.get<IAttendanceService>(
